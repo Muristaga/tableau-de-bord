@@ -416,6 +416,13 @@ main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1
 .file-warn { font-size:9px; color:var(--orn); margin-top:4px; display:none; }
 .file-warn.show { display:block; }
 
+/* DRAG & DROP */
+.dragging { opacity:.4; transform:scale(.98); }
+.drag-over { border-top:2px solid var(--blue) !important; }
+.drag-handle { cursor:grab; color:var(--t3); font-size:11px; padding:0 4px; flex-shrink:0; user-select:none; }
+.drag-handle:active { cursor:grabbing; }
+.drag-handle:hover { color:var(--t2); }
+
 /* ═══ JAUGE DIFFICULTÉ / AVANCEMENT ═══ */
 .diff-gauge { display:flex; align-items:center; gap:7px; padding:5px 10px 7px; border-top:1px solid var(--b1); background:#0c0c0c; }
 .dg-label { font-size:8px; font-family:'Syne',sans-serif; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--t3); flex-shrink:0; min-width:70px; }
@@ -573,12 +580,12 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
   <div class="sbtns">
     <button class="sbtn" style="border-color:rgba(66,168,71,.3);color:var(--grn)" id="gdBtn" onclick="gdConnect()">☁️ Drive</button>
     <button class="sbtn" onclick="gdLoad()">☁️ Charger Drive</button>
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
     <button class="sbtn pri"  onclick="exportData()">⬇️ Exporter JSON</button>
     <button class="sbtn pri"  onclick="document.getElementById('impFile').click()">⬆️ Importer JSON</button>
     <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(event)">
     <button class="sbtn dan"  onclick="dlAllMedia()">🖼️ Captures</button>
     <button class="sbtn"      onclick="saveAll()">💾 Sauvegarder</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -1143,8 +1150,59 @@ function renderPrompts(el,ref,btn){
 }
 
 /* ══════════════════════════════════
-   CHAÎNE
+   DRAG & DROP
 ══════════════════════════════════ */
+function makeDraggable(container, getItems, setItems, renderFn){
+  let dragEl=null, dragIdx=null;
+
+  function attach(el, idx){
+    const handle = el.querySelector('.drag-handle');
+    if(!handle) return;
+
+    handle.addEventListener('mousedown', e=>{
+      e.stopPropagation();
+      dragEl=el; dragIdx=idx;
+      el.draggable=true;
+    });
+
+    el.addEventListener('dragstart', e=>{
+      dragEl=el; dragIdx=idx;
+      setTimeout(()=>el.classList.add('dragging'),0);
+      e.dataTransfer.effectAllowed='move';
+    });
+    el.addEventListener('dragend', ()=>{
+      el.classList.remove('dragging');
+      container.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));
+      dragEl=null; dragIdx=null;
+    });
+    el.addEventListener('dragover', e=>{
+      e.preventDefault();
+      if(el!==dragEl) el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', ()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop', e=>{
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      if(!dragEl||dragEl===el) return;
+      const items=getItems();
+      const toIdx=[...container.children].indexOf(el);
+      const fromIdx=[...container.children].indexOf(dragEl);
+      if(fromIdx<0||toIdx<0) return;
+      const [moved]=items.splice(fromIdx,1);
+      items.splice(toIdx,0,moved);
+      setItems(items);
+      renderFn();
+      markDirty();
+    });
+  }
+
+  [...container.children].forEach((el,i)=>attach(el,i));
+}
+
+function refreshDrag(containerId, getItems, setItems, renderFn){
+  const c=document.getElementById(containerId);
+  if(c) makeDraggable(c, getItems, setItems, renderFn);
+}
 function renderChain(){
   const flow=document.getElementById('chflow');flow.innerHTML='';
   const keys=Object.keys(CHAIN_DATA);
@@ -1181,11 +1239,15 @@ function toggleChain(key,step){
    LIVRABLES
 ══════════════════════════════════ */
 const SCC={todo:'',cours:'',done:'✓'},SLL={todo:'À FAIRE',cours:'EN COURS',done:'FAIT'},SBB={todo:'bt',cours:'bc',done:'bd'},SWW={todo:'lvwrap',cours:'lvwrap sc',done:'lvwrap sd'},SCY={todo:'cours',cours:'done',done:'todo'};
-function renderLivrables(){const list=document.getElementById('lvlist');list.innerHTML='';STATE.livrables.forEach(lv=>list.appendChild(makeLivrable(lv)));}
+function renderLivrables(){
+  const list=document.getElementById('lvlist');list.innerHTML='';
+  STATE.livrables.forEach(lv=>list.appendChild(makeLivrable(lv)));
+  makeDraggable(list,()=>STATE.livrables,v=>{STATE.livrables=v;},renderLivrables);
+}
 function makeLivrable(lv){
   const wrap=document.createElement('li');wrap.className=SWW[lv.status];wrap.dataset.id=lv.id;
   const row=document.createElement('div');row.className='lvrow';
-  row.innerHTML=`<div class="lvchk">${SCC[lv.status]}</div><div class="lvbody"><div class="lvname">${lv.name}</div><div class="lvdet">${lv.det}</div></div><span class="lvbadge ${SBB[lv.status]}">${SLL[lv.status]}</span><div class="lvacts"><button class="rbtn ${lv.notes&&lv.notes.length?'has':''}" title="Remarques">📝</button><button class="pbtn ${lv.prompts&&lv.prompts.length?'has':''}" title="Prompts">🎯</button><button class="delbtn">×</button></div>`;
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><div class="lvchk">${SCC[lv.status]}</div><div class="lvbody"><div class="lvname">${lv.name}</div><div class="lvdet">${lv.det}</div></div><span class="lvbadge ${SBB[lv.status]}">${SLL[lv.status]}</span><div class="lvacts"><button class="rbtn ${lv.notes&&lv.notes.length?'has':''}" title="Remarques">📝</button><button class="pbtn ${lv.prompts&&lv.prompts.length?'has':''}" title="Prompts">🎯</button><button class="delbtn">×</button></div>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(lv,'difficulty'));
   mountRzone(wrap,lv.notes,lv.media,lv.prompts,lv.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'));
   row.querySelector('.lvchk').onclick=e=>{e.stopPropagation();lv.status=SCY[lv.status];wrap.className=SWW[lv.status];row.querySelector('.lvchk').textContent=SCC[lv.status];row.querySelector('.lvbadge').textContent=SLL[lv.status];row.querySelector('.lvbadge').className='lvbadge '+SBB[lv.status];markDirty();};
@@ -1199,11 +1261,15 @@ document.getElementById('lvinp').addEventListener('keydown',e=>{if(e.key==='Ente
 /* ══════════════════════════════════
    OUTILS
 ══════════════════════════════════ */
-function renderOutils(){const chain=document.getElementById('ochain');chain.innerHTML='';STATE.outils.forEach(ot=>chain.appendChild(makeOutil(ot)));}
+function renderOutils(){
+  const chain=document.getElementById('ochain');chain.innerHTML='';
+  STATE.outils.forEach(ot=>chain.appendChild(makeOutil(ot)));
+  makeDraggable(chain,()=>STATE.outils,v=>{STATE.outils=v;},renderOutils);
+}
 function makeOutil(ot){
   const wrap=document.createElement('div');wrap.className=`owrap ${ot.cls}`;wrap.dataset.id=ot.id;
   const row=document.createElement('div');row.className='orow';
-  row.innerHTML=`${svg(ot.svgKey)}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${svg(ot.svgKey)}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(ot,'difficulty'));
   mountRzone(wrap,ot.notes,ot.media,ot.prompts,ot.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'));
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ?')){STATE.outils=STATE.outils.filter(x=>x.id!==ot.id);wrap.remove();markDirty();}};
@@ -1216,11 +1282,15 @@ document.getElementById('oinp').addEventListener('keydown',e=>{if(e.key==='Enter
 /* ══════════════════════════════════
    DIFFICULTÉS
 ══════════════════════════════════ */
-function renderDiffs(){const list=document.getElementById('dlist');list.innerHTML='';STATE.diffs.forEach(df=>list.appendChild(makeDiff(df)));}
+function renderDiffs(){
+  const list=document.getElementById('dlist');list.innerHTML='';
+  STATE.diffs.forEach(df=>list.appendChild(makeDiff(df)));
+  makeDraggable(list,()=>STATE.diffs,v=>{STATE.diffs=v;},renderDiffs);
+}
 function makeDiff(df){
   const wrap=document.createElement('div');wrap.className='dwrap';wrap.dataset.id=df.id;
   const row=document.createElement('div');row.className='drow';
-  row.innerHTML=`<span class="dico">${df.ico}</span><div class="dtext"><strong>${df.title}</strong><span>${df.sub}</span></div><button class="rbtn ${df.notes&&df.notes.length?'has':''}">📝</button><button class="delbtn">×</button>`;
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><span class="dico">${df.ico}</span><div class="dtext"><strong>${df.title}</strong><span>${df.sub}</span></div><button class="rbtn ${df.notes&&df.notes.length?'has':''}">📝</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);
   mountRzone(wrap,df.notes,df.media,null,df.files,row.querySelector('.rbtn'),null);
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ?')){STATE.diffs=STATE.diffs.filter(x=>x.id!==df.id);wrap.remove();markDirty();}};
@@ -1233,11 +1303,15 @@ document.getElementById('dinp').addEventListener('keydown',e=>{if(e.key==='Enter
 /* ══════════════════════════════════
    NON-NÉGOCIABLES
 ══════════════════════════════════ */
-function renderNNs(){const grid=document.getElementById('nngrid');grid.innerHTML='';STATE.nns.forEach(nn=>grid.appendChild(makeNN(nn)));}
+function renderNNs(){
+  const grid=document.getElementById('nngrid');grid.innerHTML='';
+  STATE.nns.forEach(nn=>grid.appendChild(makeNN(nn)));
+  makeDraggable(grid,()=>STATE.nns,v=>{STATE.nns=v;},renderNNs);
+}
 function makeNN(nn){
   const wrap=document.createElement('div');wrap.className='nnwrap';wrap.dataset.id=nn.id;
   const row=document.createElement('div');row.className='nnrow';
-  row.innerHTML=`<span class="nnnum">${nn.num}</span><span class="nntxt">${nn.txt}</span><button class="rbtn ${nn.notes&&nn.notes.length?'has':''}" style="position:absolute;right:22px;top:8px">📝</button><button class="delbtn" style="position:absolute;right:6px;top:8px">×</button>`;
+  row.innerHTML=`<span class="drag-handle" title="Déplacer" style="position:absolute;left:6px;top:10px">⠿</span><span class="nnnum" style="margin-left:14px">${nn.num}</span><span class="nntxt">${nn.txt}</span><button class="rbtn ${nn.notes&&nn.notes.length?'has':''}" style="position:absolute;right:22px;top:8px">📝</button><button class="delbtn" style="position:absolute;right:6px;top:8px">×</button>`;
   wrap.appendChild(row);
   mountRzone(wrap,nn.notes,nn.media,null,nn.files,row.querySelector('.rbtn'),null);
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ?')){STATE.nns=STATE.nns.filter(x=>x.id!==nn.id);wrap.remove();markDirty();}};

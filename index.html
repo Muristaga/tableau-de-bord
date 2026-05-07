@@ -10,12 +10,116 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mon Stage">
 <link rel="apple-touch-icon" href="/icon-192.png">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  });
+/* ══ GOOGLE DRIVE CONFIG ══ */
+const GD_CLIENT_ID = '767683949952-th92ud4u3ohk2v547l9ipsgh77p7a00b.apps.googleusercontent.com';
+const GD_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GD_FILE_NAME = 'tableau-bord-karima.json';
+let gdToken = null;
+let gdFileId = null;
+
+function gdInit(){
+  const saved = localStorage.getItem('gd_token');
+  if(saved){ gdToken = saved; gdUpdateBtn(true); gdFindFile(); }
 }
+
+function gdUpdateBtn(connected){
+  const btn = document.getElementById('gdBtn');
+  if(!btn) return;
+  if(connected){
+    btn.textContent = '☁️ Drive ✓';
+    btn.style.borderColor = 'rgba(66,168,71,.5)';
+    btn.style.color = 'var(--grn)';
+  } else {
+    btn.textContent = '☁️ Drive';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+}
+
+function gdConnect(){
+  if(gdToken){ gdSave(); return; }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GD_CLIENT_ID,
+    scope: GD_SCOPE,
+    callback: (resp) => {
+      if(resp.access_token){
+        gdToken = resp.access_token;
+        localStorage.setItem('gd_token', gdToken);
+        gdUpdateBtn(true);
+        gdFindFile().then(() => gdSave());
+        toast('✓ Connecté à Google Drive');
+      }
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function gdFindFile(){
+  try {
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GD_FILE_NAME}'`, {
+      headers: { Authorization: 'Bearer ' + gdToken }
+    });
+    const d = await r.json();
+    if(d.files && d.files.length > 0) gdFileId = d.files[0].id;
+  } catch(e){}
+}
+
+async function gdSave(){
+  if(!gdToken){ gdConnect(); return; }
+  const phases={};
+  document.querySelectorAll('.phase').forEach(p=>{phases[p.dataset.ph]=p.classList.contains('done')?'done':p.classList.contains('active')?'active':'todo';});
+  STATE.phases=phases; STATE.savedAt=new Date().toISOString();
+  const body = JSON.stringify(STATE);
+  try {
+    let r;
+    if(gdFileId){
+      r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${gdFileId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + gdToken, 'Content-Type': 'application/json' },
+        body
+      });
+    } else {
+      const meta = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + gdToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: GD_FILE_NAME, parents: ['appDataFolder'] })
+      });
+      const mj = await meta.json();
+      gdFileId = mj.id;
+      r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${gdFileId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + gdToken, 'Content-Type': 'application/json' },
+        body
+      });
+    }
+    if(r.ok){ toast('☁️ Sauvegardé sur Google Drive'); markClean(); }
+    else { gdToken=null; localStorage.removeItem('gd_token'); gdUpdateBtn(false); toast('⚠️ Erreur Drive — reconnecte-toi','var(--orn)'); }
+  } catch(e){ toast('⚠️ Erreur Drive','var(--orn)'); }
+}
+
+async function gdLoad(){
+  if(!gdToken){ toast('Connecte-toi d\'abord à Drive','var(--orn)'); return; }
+  await gdFindFile();
+  if(!gdFileId){ toast('Aucun fichier sur Drive','var(--orn)'); return; }
+  try {
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${gdFileId}?alt=media`, {
+      headers: { Authorization: 'Bearer ' + gdToken }
+    });
+    const d = await r.json();
+    STATE.livrables=d.livrables||[]; STATE.outils=d.outils||[];
+    STATE.diffs=d.diffs||[]; STATE.nns=d.nns||[]; STATE.memoire=d.memoire||[];
+    STATE.chNotes=d.chNotes||{}; STATE.chMedia=d.chMedia||{};
+    STATE.chPrompts=d.chPrompts||{}; STATE.chFiles=d.chFiles||{};
+    STATE.globals=d.globals||[]; STATE.phases=d.phases||{};
+    STATE.autoeval=d.autoeval||{livrer:0,apprendre:0,convaincre:0};
+    compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
+    if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
+    renderAll(); toast('☁️ Données chargées depuis Drive');
+  } catch(e){ toast('⚠️ Erreur chargement Drive','var(--orn)'); }
+}
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
@@ -467,6 +571,8 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <span id="storageBar"></span>
   </div>
   <div class="sbtns">
+    <button class="sbtn" style="border-color:rgba(66,168,71,.3);color:var(--grn)" id="gdBtn" onclick="gdConnect()">☁️ Drive</button>
+    <button class="sbtn" onclick="gdLoad()">☁️ Charger Drive</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
     <button class="sbtn pri"  onclick="exportData()">⬇️ Exporter JSON</button>
     <button class="sbtn pri"  onclick="document.getElementById('impFile').click()">⬆️ Importer JSON</button>
@@ -1210,6 +1316,7 @@ function renderAll(){
 
 loadAll();
 initTheme();
+gdInit();
 </script>
 </body>
 </html>

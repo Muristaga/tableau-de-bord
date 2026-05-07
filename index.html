@@ -365,13 +365,94 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
 @keyframes fi    { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
 
 @media(max-width:800px){
-  main { grid-template-columns:1fr; padding:12px; }
-  header,.savebar { padding-left:14px; padding-right:14px; }
+  main { grid-template-columns:1fr; padding:10px; gap:8px; }
+  header { padding:20px 14px 14px; }
+  .savebar { padding:6px 10px; flex-wrap:wrap; gap:4px; }
+  .sbtns { flex-wrap:wrap; gap:4px; }
+  .sbtn,.theme-btn { padding:5px 8px; font-size:9px; }
+  h1 { font-size:20px; }
+  .hmeta { gap:10px; margin-top:10px; }
+  .mv { font-size:10px; }
   .card-half,.card-full,.krow,.chsec,.phsec,.gsec { grid-column:1; }
-  .phgrid { grid-template-columns:repeat(3,1fr); }
+  .phgrid { grid-template-columns:repeat(2,1fr); }
   .krow   { grid-template-columns:1fr 1fr; }
-  .nngrid,.pgrid { grid-template-columns:1fr; }
-  footer { padding:10px 14px; }
+  .nngrid { grid-template-columns:1fr; }
+  .pgrid  { grid-template-columns:1fr; }
+  footer  { padding:10px 14px; flex-direction:column; text-align:center; }
+
+  /* Colonne flex → vertical sur mobile */
+  div[style*="flex-direction:column"] { width:100% !important; }
+
+  /* Chaîne scrollable horizontalement */
+  .chflow { gap:0; }
+  .chstep { min-width:70px; }
+  .chbub  { width:42px; height:42px; }
+  .chbub svg { width:22px; height:22px; }
+  .chlbl  { font-size:8px; max-width:66px; }
+  .chnote { font-size:7px; max-width:66px; }
+  .charr  { font-size:10px; }
+
+  /* Livrables */
+  .lvname { font-size:11px; }
+  .lvdet  { font-size:9px; }
+  .lvbadge { font-size:7px; padding:1px 4px; }
+  .lvacts { gap:1px; }
+
+  /* Outils */
+  .oname { font-size:10px; }
+  .orole { font-size:9px; }
+  .otag  { font-size:7px; }
+
+  /* Non-négociables */
+  .nnnum { font-size:13px; }
+  .nntxt { font-size:10px; }
+
+  /* Jauge */
+  .diff-gauge { padding:4px 8px 6px; gap:5px; }
+  .dg-label   { font-size:7px; min-width:58px; }
+  .dg-val     { font-size:9px; min-width:16px; }
+  .dg-badge   { font-size:7px; padding:1px 4px; }
+
+  /* Zones remarques */
+  .rtabs { gap:1px; }
+  .rtab  { font-size:7px; padding:2px 5px; }
+  .rtarea { font-size:11px; }
+  .media-grid { grid-template-columns:repeat(2,1fr); }
+
+  /* Mémoire */
+  .mem-title { font-size:11px; }
+  .mem-ta    { font-size:11px; }
+
+  /* Savebar compacte */
+  .sind { font-size:9px; }
+  #storageBar { display:none; }
+
+  /* KPIs plus compacts */
+  .kn { font-size:22px; }
+  .kl { font-size:8px; }
+  .kpi { padding:10px 6px; }
+
+  /* Objectif */
+  .otxt { font-size:14px; }
+  .osub { font-size:10px; }
+
+  /* Public + Triple Priorité */
+  .pi { padding:7px 9px; }
+  .pit { font-size:9px; }
+  .pid { font-size:9px; }
+}
+
+@media(max-width:400px){
+  main { padding:8px; gap:6px; }
+  header { padding:14px 10px; }
+  h1 { font-size:17px; }
+  .phgrid { grid-template-columns:repeat(2,1fr); }
+  .krow { grid-template-columns:1fr 1fr; }
+  .chstep { min-width:58px; }
+  .chbub  { width:36px; height:36px; }
+  .chbub svg { width:18px; height:18px; }
+  .sbtns { gap:3px; }
+  .sbtn { font-size:8px; padding:4px 6px; }
 }
 </style>
 </head>

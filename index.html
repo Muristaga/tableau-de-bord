@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tableau de Bord — Karima Benchaa</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#E8533A">
@@ -56,6 +56,7 @@ body.light .mem-textarea { background:var(--s2); color:var(--t1); }
 body.light .pcard { background:linear-gradient(135deg,#EAE4F8,var(--bg)); }
 
 * { margin:0; padding:0; box-sizing:border-box; }
+html, body { overflow-x:hidden; max-width:100vw; }
 body { background:var(--bg); color:var(--t1); font-family:'DM Sans',sans-serif; font-size:13px; line-height:1.6; min-height:100vh; }
 
 /* ═══ HEADER ═══ */
@@ -96,7 +97,7 @@ h1 span { color:var(--red); }
 .lb-close:hover { opacity:1; }
 
 /* ═══ GRID ═══ */
-main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
+main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; width:100%; }
 .card { background:var(--s1); border-radius:9px; padding:18px; border:1px solid var(--b1); transition:border-color .2s; }
 .card:hover { border-color:var(--b2); }
 .card-full { grid-column:1/-1; }
@@ -365,94 +366,83 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
 @keyframes fi    { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
 
 @media(max-width:800px){
-  main { grid-template-columns:1fr; padding:10px; gap:8px; }
-  header { padding:20px 14px 14px; }
+  html,body { overflow-x:hidden; }
+  main { grid-template-columns:1fr !important; padding:8px !important; gap:8px; width:100%; max-width:100vw; }
+  header { padding:16px 12px 12px; }
   .savebar { padding:6px 10px; flex-wrap:wrap; gap:4px; }
   .sbtns { flex-wrap:wrap; gap:4px; }
   .sbtn,.theme-btn { padding:5px 8px; font-size:9px; }
-  h1 { font-size:20px; }
-  .hmeta { gap:10px; margin-top:10px; }
+  h1 { font-size:18px; word-break:break-word; }
+  .hmeta { gap:8px; margin-top:10px; }
   .mv { font-size:10px; }
-  .card-half,.card-full,.krow,.chsec,.phsec,.gsec { grid-column:1; }
+  .card-half,.card-full,.krow,.chsec,.phsec,.gsec { grid-column:1 !important; }
   .phgrid { grid-template-columns:repeat(2,1fr); }
-  .krow   { grid-template-columns:1fr 1fr; }
-  .nngrid { grid-template-columns:1fr; }
-  .pgrid  { grid-template-columns:1fr; }
-  footer  { padding:10px 14px; flex-direction:column; text-align:center; }
+  .krow { grid-template-columns:1fr 1fr !important; }
+  .nngrid { grid-template-columns:1fr !important; }
+  .pgrid  { grid-template-columns:1fr !important; }
+  footer  { padding:10px 12px; flex-direction:column; text-align:center; }
 
-  /* Colonne flex → vertical sur mobile */
-  div[style*="flex-direction:column"] { width:100% !important; }
+  /* Forcer toutes les cartes à 100% */
+  .card { width:100% !important; max-width:100% !important; overflow:hidden; }
 
-  /* Chaîne scrollable horizontalement */
-  .chflow { gap:0; }
-  .chstep { min-width:70px; }
-  .chbub  { width:42px; height:42px; }
+  /* Colonne flex verticale */
+  div[style*="flex-direction:column"] { width:100% !important; max-width:100% !important; }
+
+  /* Objectif — texte qui dépasse */
+  .otxt { font-size:14px; word-break:break-word; }
+  .osub { font-size:10px; word-break:break-word; max-width:100%; }
+
+  /* Chaîne scrollable horizontalement seulement */
+  .chflow { overflow-x:auto; overflow-y:hidden; flex-wrap:nowrap; }
+  .chstep { min-width:68px; flex-shrink:0; }
+  .chbub  { width:40px; height:40px; }
   .chbub svg { width:22px; height:22px; }
-  .chlbl  { font-size:8px; max-width:66px; }
-  .chnote { font-size:7px; max-width:66px; }
+  .chlbl  { font-size:8px; max-width:64px; }
+  .chnote { font-size:7px; max-width:64px; display:none; }
   .charr  { font-size:10px; }
+
+  /* Savebar compacte */
+  .sind { font-size:9px; }
+  #storageBar { display:none; }
+
+  /* KPIs */
+  .kn { font-size:20px; }
+  .kl { font-size:8px; }
+  .kpi { padding:10px 6px; }
 
   /* Livrables */
   .lvname { font-size:11px; }
   .lvdet  { font-size:9px; }
   .lvbadge { font-size:7px; padding:1px 4px; }
-  .lvacts { gap:1px; }
 
   /* Outils */
   .oname { font-size:10px; }
   .orole { font-size:9px; }
   .otag  { font-size:7px; }
 
-  /* Non-négociables */
-  .nnnum { font-size:13px; }
-  .nntxt { font-size:10px; }
-
   /* Jauge */
-  .diff-gauge { padding:4px 8px 6px; gap:5px; }
-  .dg-label   { font-size:7px; min-width:58px; }
-  .dg-val     { font-size:9px; min-width:16px; }
+  .diff-gauge { padding:4px 8px 5px; gap:4px; flex-wrap:wrap; }
+  .dg-label   { font-size:7px; min-width:55px; }
+  .dg-val     { font-size:9px; min-width:14px; }
   .dg-badge   { font-size:7px; padding:1px 4px; }
 
   /* Zones remarques */
-  .rtabs { gap:1px; }
+  .rtabs { gap:1px; flex-wrap:wrap; }
   .rtab  { font-size:7px; padding:2px 5px; }
-  .rtarea { font-size:11px; }
   .media-grid { grid-template-columns:repeat(2,1fr); }
 
   /* Mémoire */
   .mem-title { font-size:11px; }
   .mem-ta    { font-size:11px; }
 
-  /* Savebar compacte */
-  .sind { font-size:9px; }
-  #storageBar { display:none; }
-
-  /* KPIs plus compacts */
-  .kn { font-size:22px; }
-  .kl { font-size:8px; }
-  .kpi { padding:10px 6px; }
-
-  /* Objectif */
-  .otxt { font-size:14px; }
-  .osub { font-size:10px; }
-
   /* Public + Triple Priorité */
-  .pi { padding:7px 9px; }
+  .pi  { padding:7px 9px; }
   .pit { font-size:9px; }
   .pid { font-size:9px; }
-}
 
-@media(max-width:400px){
-  main { padding:8px; gap:6px; }
-  header { padding:14px 10px; }
-  h1 { font-size:17px; }
-  .phgrid { grid-template-columns:repeat(2,1fr); }
-  .krow { grid-template-columns:1fr 1fr; }
-  .chstep { min-width:58px; }
-  .chbub  { width:36px; height:36px; }
-  .chbub svg { width:18px; height:18px; }
-  .sbtns { gap:3px; }
-  .sbtn { font-size:8px; padding:4px 6px; }
+  /* Non-négociables */
+  .nnnum { font-size:12px; }
+  .nntxt { font-size:10px; padding-right:28px; }
 }
 </style>
 </head>

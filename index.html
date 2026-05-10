@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -277,7 +278,7 @@ main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1
 /* ═══ OUTILS ═══ */
 .ochain { display:flex; flex-direction:column; gap:5px; }
 .owrap { display:flex; flex-direction:column; background:var(--s2); border-radius:7px; border-left:3px solid var(--b1); overflow:hidden; }
-.owrap.odec { opacity:.45; }
+.owrap.odec { opacity:1; }
 .owrap.opiv { border-left-color:var(--gold); }
 .owrap.obug { border-left-color:var(--orn); }
 .owrap.ook  { border-left-color:var(--grn); }
@@ -316,7 +317,7 @@ main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1
 .dtext span   { font-size:10px; color:var(--t2); }
 
 /* ═══ NON-NÉGOCIABLES ═══ */
-.nngrid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.nngrid { display:grid; grid-template-columns:1fr; gap:7px; }
 .nnwrap { display:flex; flex-direction:column; background:#0d0d0d; border-radius:7px; border-left:2px solid var(--gold); overflow:hidden; }
 .nnrow  { display:flex; gap:8px; align-items:flex-start; padding:8px 10px; cursor:pointer; transition:background .15s; position:relative; }
 .nnrow:hover { background:var(--s2); }
@@ -586,10 +587,27 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(event)">
     <button class="sbtn dan"  onclick="dlAllMedia()">🖼️ Captures</button>
     <button class="sbtn"      onclick="saveAll()">💾 Sauvegarder</button>
+    <button class="sbtn" style="border-color:rgba(184,106,240,.4);color:#b86af0" onclick="genCompteRendu()">📖 Compte rendu</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- MODAL COMPTE RENDU -->
+<div id="crModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9990;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--s1);border:1px solid var(--b2);border-radius:12px;width:100%;max-width:740px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--b1)">
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--t1)">📖 Compte rendu de mission</span>
+      <button onclick="document.getElementById('crModal').style.display='none'" style="background:transparent;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div id="crBody" style="flex:1;overflow-y:auto;padding:20px"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--b1);display:flex;gap:8px;justify-content:flex-end">
+      <button class="sbtn pri" onclick="copyCR()">📋 Copier</button>
+      <button class="sbtn pri" onclick="dlCR()">⬇️ Télécharger</button>
+      <button class="sbtn" onclick="document.getElementById('crModal').style.display='none'">Fermer</button>
+    </div>
+  </div>
+</div>
 
 <div class="lightbox" id="lb" onclick="closeLB()">
   <span class="lb-close">✕</span>
@@ -651,11 +669,10 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <!-- PUBLIC CIBLE -->
     <div class="card">
       <div class="ctitle">👥 Public Cible</div>
-      <div class="pgrid">
-        <div class="pi"><div class="pit">Profil</div><div class="pid">Boulanger, coiffeur, artisan, consultant</div></div>
-        <div class="pi"><div class="pit">Niveau IA</div><div class="pid">Zéro — méconnaissance totale, parfois méfiance</div></div>
-        <div class="pi"><div class="pit">Besoin réel</div><div class="pid">Gagner du temps, moins de paperasse</div></div>
-        <div class="pi"><div class="pit">Blocage clé</div><div class="pid">Peur que l'IA remplace — elle doit aider discrètement</div></div>
+      <div class="pgrid" id="pgrid"></div>
+      <div class="addrow" style="margin-top:8px">
+        <input class="addinp" id="pcInp" placeholder="Nouvelle étiquette…">
+        <button class="addbtn" onclick="addPC()">+ Ajouter</button>
       </div>
     </div>
 
@@ -892,6 +909,7 @@ function loadAll(){
       STATE.globals  =d.globals  ||[];
       STATE.phases   =d.phases   ||{};
       STATE.autoeval =d.autoeval ||{livrer:0,apprendre:0,convaincre:0};
+      STATE.publicCible=d.publicCible||JSON.parse(JSON.stringify(INIT_PC_DATA));
       compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
       if(d.savedAt){const dt=new Date(d.savedAt);document.getElementById('fdate').textContent='Sauvegardé le '+dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+' à '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
       if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
@@ -1195,6 +1213,12 @@ function makeDraggable(container, getItems, setItems, renderFn){
       renderFn();
       markDirty();
     });
+
+    // Touch mobile
+    let touchEl=null;
+    handle.addEventListener('touchstart', e=>{ e.stopPropagation(); touchEl=el; el.classList.add('dragging'); },{passive:true});
+    handle.addEventListener('touchmove', e=>{ e.preventDefault(); if(!touchEl) return; const y=e.touches[0].clientY; const els=[...container.children]; container.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over')); const target=els.find(c=>{ if(c===touchEl) return false; const r=c.getBoundingClientRect(); return y>=r.top&&y<=r.bottom; }); if(target) target.classList.add('drag-over'); },{passive:false});
+    handle.addEventListener('touchend', e=>{ if(!touchEl) return; touchEl.classList.remove('dragging'); container.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over')); const y=e.changedTouches[0].clientY; const els=[...container.children]; const toIdx=els.findIndex(c=>{ if(c===touchEl) return false; const r=c.getBoundingClientRect(); return y>=r.top&&y<=r.bottom; }); const fromIdx=els.indexOf(touchEl); if(toIdx>=0&&fromIdx>=0&&toIdx!==fromIdx){ const items=getItems(); const [moved]=items.splice(fromIdx,1); items.splice(toIdx,0,moved); setItems(items); renderFn(); markDirty(); } touchEl=null; },{passive:true});
   }
 
   [...container.children].forEach((el,i)=>attach(el,i));
@@ -1381,13 +1405,69 @@ function initTheme(){if(localStorage.getItem('kb_theme')==='light'){document.bod
    RENDER ALL + INIT
 ══════════════════════════════════ */
 function renderAll(){
-  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire();
+  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC();
   if(!STATE.autoeval)STATE.autoeval={livrer:0,apprendre:0,convaincre:0};
   [{id:'g-livrer',k:'livrer'},{id:'g-apprendre',k:'apprendre'},{id:'g-convaincre',k:'convaincre'}].forEach(({id,k})=>{
     const el=document.getElementById(id);if(el){el.innerHTML='';el.appendChild(makeGauge(STATE.autoeval,k,'Avancement'));}
   });
   updateSBar();
 }
+
+/* ══ PUBLIC CIBLE ══ */
+const INIT_PC_DATA=[
+  {id:'pc1',titre:'Profil',texte:'Boulanger, coiffeur, artisan, consultant'},
+  {id:'pc2',titre:'Niveau IA',texte:'Zéro — méconnaissance totale, parfois méfiance'},
+  {id:'pc3',titre:'Besoin réel',texte:'Gagner du temps, moins de paperasse'},
+  {id:'pc4',titre:'Blocage clé',texte:"Peur que l'IA remplace — elle doit aider discrètement"},
+];
+function renderPC(){
+  if(!STATE.publicCible||!STATE.publicCible.length) STATE.publicCible=JSON.parse(JSON.stringify(INIT_PC_DATA));
+  const grid=document.getElementById('pgrid'); if(!grid) return;
+  grid.innerHTML='';
+  STATE.publicCible.forEach(pc=>grid.appendChild(makePC(pc)));
+  makeDraggable(grid,()=>STATE.publicCible,v=>{STATE.publicCible=v;},renderPC);
+}
+function makePC(pc){
+  const el=document.createElement('div'); el.className='pi'; el.style.position='relative';
+  el.innerHTML=`<span class="drag-handle" style="position:absolute;left:5px;top:8px;font-size:10px">⠿</span><div class="pit" style="padding-left:14px" contenteditable="true" spellcheck="false">${pc.titre}</div><div class="pid" style="padding-left:14px" contenteditable="true" spellcheck="false">${pc.texte}</div><button class="delbtn" style="position:absolute;right:4px;top:4px">×</button>`;
+  el.querySelector('.pit').addEventListener('blur',e=>{pc.titre=e.target.textContent.trim();markDirty();});
+  el.querySelector('.pid').addEventListener('blur',e=>{pc.texte=e.target.textContent.trim();markDirty();});
+  el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();STATE.publicCible=STATE.publicCible.filter(x=>x.id!==pc.id);el.remove();markDirty();});
+  return el;
+}
+function addPC(){
+  const inp=document.getElementById('pcInp'); const val=inp.value.trim(); if(!val) return;
+  if(!STATE.publicCible) STATE.publicCible=[];
+  const pc={id:'pc'+Date.now(),titre:val,texte:'...'};
+  STATE.publicCible.push(pc);
+  const grid=document.getElementById('pgrid'); const el=makePC(pc); grid.appendChild(el);
+  el.querySelector('.pid').focus(); inp.value=''; markDirty();
+}
+
+/* ══ COMPTE RENDU ══ */
+let _crText='';
+function buildCRPrompt(){
+  const lv=STATE.livrables.map(l=>`- ${l.name} (${l.status==='done'?'Fait':l.status==='cours'?'En cours':'À faire'}): ${l.det}`).join('\n');
+  const ot=STATE.outils.map(o=>`- ${o.name} [${o.tag}]: ${o.role}`).join('\n');
+  const df=STATE.diffs.map(d=>`- ${d.title}: ${d.sub}`).join('\n');
+  const nn=STATE.nns.map(n=>`- ${n.txt}`).join('\n');
+  const ae=STATE.autoeval||{};
+  const pc=(STATE.publicCible||INIT_PC_DATA).map(p=>`- ${p.titre}: ${p.texte}`).join('\n');
+  return `Tu es directeur de mémoire de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum (start-up, budget zéro, 6 semaines, seule). Rédige un compte rendu narratif structuré en étapes qui raconte l'histoire complète de sa mission. Ton professionnel mais vivant, avec des titres clairs.\n\nLIVRABLES:\n${lv}\n\nOUTILS:\n${ot}\n\nDIFFICULTÉS:\n${df}\n\nNON-NÉGOCIABLES:\n${nn}\n\nPUBLIC CIBLE:\n${pc}\n\nAUTO-ÉVALUATION:\n- Livrer: ${ae.livrer||0}/10\n- Apprendre IP: ${ae.apprendre||0}/10\n- Convaincre tutrice: ${ae.convaincre||0}/10`;
+}
+async function genCompteRendu(){
+  const modal=document.getElementById('crModal'); const body=document.getElementById('crBody');
+  modal.style.display='flex'; body.innerHTML='<div style="text-align:center;padding:40px;color:var(--t2)">⏳ Génération en cours…</div>'; _crText='';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:buildCRPrompt()}]})});
+    const d=await r.json();
+    _crText=d.content?.map(c=>c.text||'').join('')||'Erreur.';
+    const html=_crText.replace(/^## (.+)$/gm,'<h2 style="color:var(--red);font-size:12px;text-transform:uppercase;margin:16px 0 4px">$1</h2>').replace(/^### (.+)$/gm,'<h3 style="color:var(--t1);font-size:11px;margin:10px 0 3px">$1</h3>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    body.innerHTML=`<div style="font-size:13px;color:var(--t2);line-height:1.8">${html}</div>`;
+  }catch(e){ body.innerHTML='<div style="text-align:center;padding:40px">⚠️ Erreur. Réessaie.</div>'; }
+}
+function copyCR(){ navigator.clipboard.writeText(_crText).then(()=>toast('📋 Copié !')); }
+function dlCR(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([_crText],{type:'text/plain'})); a.download='compte-rendu-karima.txt'; a.click(); }
 
 loadAll();
 initTheme();

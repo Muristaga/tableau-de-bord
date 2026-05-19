@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -18,10 +19,49 @@ const GD_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GD_FILE_NAME = 'tableau-bord-karima.json';
 let gdToken = null;
 let gdFileId = null;
+let gdTokenExpiry = 0;
+let gdTokenClient = null;
+let gdAutoSaveTimer = null;
+let gdReconnectTimer = null;
 
+// Initialisation Drive — connexion permanente
 function gdInit(){
+  // Récupérer le token sauvegardé
   const saved = localStorage.getItem('gd_token');
-  if(saved){ gdToken = saved; gdUpdateBtn(true); gdFindFile(); }
+  const expiry = parseInt(localStorage.getItem('gd_token_expiry')||'0');
+  if(saved && Date.now() < expiry){
+    gdToken = saved;
+    gdTokenExpiry = expiry;
+    gdUpdateBtn(true);
+    gdFindFile();
+  }
+  // Pré-initialiser le client OAuth pour reconnexion silencieuse
+  if(window.google){
+    gdTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GD_CLIENT_ID,
+      scope: GD_SCOPE,
+      prompt: '',
+      callback: (resp) => {
+        if(resp.access_token){
+          gdToken = resp.access_token;
+          gdTokenExpiry = Date.now() + 55*60*1000; // 55 min
+          localStorage.setItem('gd_token', gdToken);
+          localStorage.setItem('gd_token_expiry', gdTokenExpiry.toString());
+          gdUpdateBtn(true);
+          gdFindFile();
+          toast('☁️ Drive — connexion permanente active');
+        }
+      }
+    });
+    // Renouveler le token automatiquement toutes les 50 min
+    setInterval(gdRenewToken, 50*60*1000);
+  }
+}
+
+function gdRenewToken(){
+  if(!gdTokenClient) return;
+  if(Date.now() < gdTokenExpiry - 5*60*1000) return; // Pas besoin si encore valide > 5min
+  gdTokenClient.requestAccessToken({prompt:''});
 }
 
 function gdUpdateBtn(connected){
@@ -33,30 +73,36 @@ function gdUpdateBtn(connected){
     btn.style.color = 'var(--grn)';
   } else {
     btn.textContent = '☁️ Drive';
-    btn.style.borderColor = '';
-    btn.style.color = '';
+    btn.style.borderColor = 'rgba(212,144,10,.4)';
+    btn.style.color = 'var(--orn)';
   }
 }
 
 function gdConnect(){
-  if(gdToken){ gdSave(); return; }
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: GD_CLIENT_ID,
-    scope: GD_SCOPE,
-    callback: (resp) => {
-      if(resp.access_token){
-        gdToken = resp.access_token;
-        localStorage.setItem('gd_token', gdToken);
-        gdUpdateBtn(true);
-        gdFindFile().then(() => gdSave());
-        toast('✓ Connecté à Google Drive');
+  if(gdToken && Date.now() < gdTokenExpiry){ gdSave(); return; }
+  if(!gdTokenClient){
+    gdTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GD_CLIENT_ID,
+      scope: GD_SCOPE,
+      callback: (resp) => {
+        if(resp.access_token){
+          gdToken = resp.access_token;
+          gdTokenExpiry = Date.now() + 55*60*1000;
+          localStorage.setItem('gd_token', gdToken);
+          localStorage.setItem('gd_token_expiry', gdTokenExpiry.toString());
+          gdUpdateBtn(true);
+          gdFindFile().then(() => gdSave());
+          toast('✓ Connecté à Google Drive — sauvegarde automatique active');
+          setInterval(gdRenewToken, 50*60*1000);
+        }
       }
-    }
-  });
-  client.requestAccessToken();
+    });
+  }
+  gdTokenClient.requestAccessToken({prompt:''});
 }
 
 async function gdFindFile(){
+  if(!gdToken) return;
   try {
     const r = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GD_FILE_NAME}'`, {
       headers: { Authorization: 'Bearer ' + gdToken }
@@ -67,13 +113,21 @@ async function gdFindFile(){
 }
 
 async function gdSave(){
-  if(!gdToken){ gdConnect(); return; }
+  // Renouveler le token si nécessaire
+  if(!gdToken || Date.now() >= gdTokenExpiry - 60000){
+    gdRenewToken();
+    await new Promise(r=>setTimeout(r,1500));
+    if(!gdToken){ gdConnect(); return; }
+  }
   const phases={};
   document.querySelectorAll('.phase').forEach(p=>{phases[p.dataset.ph]=p.classList.contains('done')?'done':p.classList.contains('active')?'active':'todo';});
   STATE.phases=phases; STATE.savedAt=new Date().toISOString();
+  // Inclure les KPIs éditables
+  STATE.kpis = getKpisData();
   const body = JSON.stringify(STATE);
   try {
     let r;
+    if(!gdFileId) await gdFindFile();
     if(gdFileId){
       r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${gdFileId}?uploadType=media`, {
         method: 'PATCH',
@@ -94,8 +148,14 @@ async function gdSave(){
         body
       });
     }
-    if(r.ok){ toast('☁️ Sauvegardé sur Google Drive'); markClean(); }
-    else { gdToken=null; localStorage.removeItem('gd_token'); gdUpdateBtn(false); toast('⚠️ Erreur Drive — reconnecte-toi','var(--orn)'); }
+    if(r.ok){ markClean(); }
+    else if(r.status === 401){
+      gdToken=null; gdTokenExpiry=0;
+      localStorage.removeItem('gd_token'); localStorage.removeItem('gd_token_expiry');
+      gdUpdateBtn(false);
+      toast('⚠️ Session Drive expirée — reconnexion...','var(--orn)');
+      setTimeout(()=>gdConnect(), 1000);
+    }
   } catch(e){ toast('⚠️ Erreur Drive','var(--orn)'); }
 }
 
@@ -114,9 +174,11 @@ async function gdLoad(){
     STATE.chPrompts=d.chPrompts||{}; STATE.chFiles=d.chFiles||{};
     STATE.globals=d.globals||[]; STATE.phases=d.phases||{};
     STATE.autoeval=d.autoeval||{livrer:0,apprendre:0,convaincre:0};
+    STATE.notes=d.notes||[]; STATE.competences=d.competences||[];
+    STATE.publicCible=d.publicCible||[]; STATE.kpis=d.kpis||null;
     compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
     if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
-    renderAll(); toast('☁️ Données chargées depuis Drive');
+    renderAll(); renderKpis(); toast('☁️ Données chargées depuis Drive');
   } catch(e){ toast('⚠️ Erreur chargement Drive','var(--orn)'); }
 }
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
@@ -190,8 +252,9 @@ h1 span { color:var(--red); }
 .storage-gauge { display:inline-flex; align-items:center; gap:5px; margin-left:8px; }
 .storage-track { width:50px; height:3px; background:var(--b2); border-radius:3px; overflow:hidden; }
 .storage-fill { height:100%; border-radius:3px; transition:width .4s,background .4s; }
-.toast { position:fixed; bottom:18px; right:18px; background:var(--s2); border:1px solid var(--b2); border-left:3px solid var(--grn); padding:9px 14px; border-radius:7px; font-size:11px; color:var(--t1); opacity:0; transform:translateY(6px); transition:all .25s; pointer-events:none; z-index:9999; }
-.toast.show { opacity:1; transform:translateY(0); }
+.toast { position:fixed; bottom:18px; right:18px; background:var(--s2); border:1px solid var(--b2); border-left:3px solid var(--grn); padding:9px 14px; border-radius:7px; font-size:11px; color:var(--t1); opacity:0; transform:translateY(6px); transition:all .25s; pointer-events:none; z-index:9999; display:flex; align-items:center; gap:10px; }
+.toast.show { opacity:1; transform:translateY(0); pointer-events:all; }
+.toast-undo { background:var(--red); color:white; border:none; border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer; flex-shrink:0; }
 
 /* ═══ LIGHTBOX ═══ */
 .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:9998; align-items:center; justify-content:center; cursor:pointer; }
@@ -201,12 +264,26 @@ h1 span { color:var(--red); }
 .lb-close:hover { opacity:1; }
 
 /* ═══ GRID ═══ */
-main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; width:100%; }
+main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:100%; }
+.full-row { display:flex; flex-direction:column; gap:11px; }
+.two-cols { display:grid; grid-template-columns:1fr 1fr; gap:11px; align-items:start; }
+.col-drop { display:flex; flex-direction:column; gap:11px; min-height:200px; padding:4px; border-radius:8px; transition:background .2s; }
+.col-drop.drag-over-col { background:rgba(255,255,255,.03); border:1px dashed var(--blue); }
 .card { background:var(--s1); border-radius:9px; padding:18px; border:1px solid var(--b1); transition:border-color .2s; }
+.card.collapsed > .card-body { display:none; }
+.card.dragging-card { opacity:.4; transform:scale(.98); }
+.card.drag-over-card { border-color:var(--blue) !important; border-style:dashed !important; }
+.draggable-card { cursor:default; }
+.ctitle { display:flex; align-items:center; gap:6px; font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--t2); margin-bottom:14px; }
+.ctitle.collapsible { cursor:pointer; user-select:none; }
+.ctitle-collapse { margin-left:auto; font-size:9px; color:var(--t3); transition:transform .2s; flex-shrink:0; }
+.card.collapsed .ctitle-collapse { transform:rotate(-90deg); }
+.card-drag-handle { cursor:grab; color:var(--t3); font-size:13px; padding:0 2px; flex-shrink:0; }
+.card-drag-handle:active { cursor:grabbing; }
+.card-drag-handle:hover { color:var(--t2); }
+/* Logo auto outil */
+.ologo-auto { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; flex-shrink:0; }
 .card:hover { border-color:var(--b2); }
-.card-full { grid-column:1/-1; }
-.card-half { grid-column:span 2; }
-.ctitle { font-family:'Syne',sans-serif; font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--t2); margin-bottom:11px; display:block; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ═══ OBJECTIF ═══ */
 .obj { background:linear-gradient(135deg,#111,#1a0e06); border-color:rgba(232,83,58,.22); grid-column:1/-1; }
@@ -216,9 +293,12 @@ main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1
 
 /* ═══ KPIs ═══ */
 .krow { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; grid-column:1/-1; }
-.kpi { background:#080808; border:1px solid var(--b1); border-radius:8px; padding:13px 10px; text-align:center; }
+.kpi { background:#080808; border:1px solid var(--b1); border-radius:8px; padding:13px 10px; text-align:center; cursor:pointer; transition:border-color .2s; }
+.kpi:hover { border-color:var(--b3); }
 .kn { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; line-height:1; color:var(--red); margin-bottom:3px; }
 .kl { font-size:9px; color:var(--t2); line-height:1.3; }
+.kn[contenteditable="true"], .kl[contenteditable="true"] { outline:1px dashed var(--b3); border-radius:3px; padding:1px 3px; background:var(--s2); }
+.kpi-editing { border-color:var(--blue) !important; }
 
 /* ═══ CHAÎNE ═══ */
 .chsec { grid-column:1/-1; }
@@ -423,6 +503,17 @@ main { padding:26px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1
 .drag-handle:active { cursor:grabbing; }
 .drag-handle:hover { color:var(--t2); }
 
+.chstep.dragging { opacity:.4; transform:scale(.95); }
+.chstep.drag-over-chain { border:2px dashed var(--blue) !important; }
+
+/* ═══ COMPÉTENCES ═══ */
+.comp-item { background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:12px 14px; position:relative; }
+.comp-item.dragging { opacity:.4; }
+.comp-item.drag-over { border-top:2px solid var(--blue); }
+.comp-name { font-size:12px; font-weight:700; color:var(--t1); border:none; background:transparent; width:100%; outline:none; padding:0; margin-bottom:4px; }
+.comp-name:focus { border-bottom:1px dashed var(--b3); }
+.comp-actions { display:flex; gap:5px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+
 /* ═══ JAUGE DIFFICULTÉ / AVANCEMENT ═══ */
 .diff-gauge { display:flex; align-items:center; gap:7px; padding:5px 10px 7px; border-top:1px solid var(--b1); background:#0c0c0c; }
 .dg-label { font-size:8px; font-family:'Syne',sans-serif; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--t3); flex-shrink:0; min-width:70px; }
@@ -478,7 +569,8 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
 
 @media(max-width:800px){
   html,body { overflow-x:hidden; }
-  main { grid-template-columns:1fr !important; padding:8px !important; gap:8px; width:100%; max-width:100vw; }
+  main { padding:8px !important; gap:8px; width:100%; max-width:100vw; }
+  .two-cols { grid-template-columns:1fr !important; }
   header { padding:16px 12px 12px; }
   .savebar { padding:6px 10px; flex-wrap:wrap; gap:4px; }
   .sbtns { flex-wrap:wrap; gap:4px; }
@@ -614,134 +706,232 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
 
 <main>
 
-  <!-- OBJECTIF -->
-  <div class="card obj">
-    <div class="ctitle">🎯 Objectif Principal</div>
-    <div class="otxt">Concevoir, de A à Z, une formation e-learning <em>certifiante</em> sur l'IA —<br>seule, sans budget LMS, sans binôme, en 6 semaines.</div>
-    <div class="osub">Intitulé : « L'IA pour votre TPE : Améliorer sa TPE à l'aide de l'IA » · Public : dirigeants de TPE non-tech · Point de départ : zéro expérience en IP.</div>
-  </div>
-
-  <!-- KPIs -->
-  <div class="krow">
-    <div class="kpi"><div class="kn">6</div><div class="kl">Semaines pour livrer</div></div>
-    <div class="kpi"><div class="kn">1</div><div class="kl">Personne sur la mission</div></div>
-    <div class="kpi"><div class="kn">0€</div><div class="kl">Budget outils e-learning</div></div>
-    <div class="kpi"><div class="kn">11</div><div class="kl">Outils dans la chaîne</div></div>
-  </div>
-
-  <!-- CHAÎNE -->
-  <div class="card chsec">
-    <div class="ctitle">⛓️ Chaîne de Fabrication — Cliquer pour lire · 📝 remarques · 🎯 prompts</div>
-    <div class="chflow" id="chflow"></div>
-    <div class="chdet" id="chdet"></div>
-    <div id="chRzc"></div>
-  </div>
-
-  <!-- PHASES -->
-  <div class="card phsec">
-    <div class="ctitle">📅 Phases — Cliquer pour basculer</div>
-    <div class="phgrid">
-      <div class="phase done"   data-ph="1"><div class="pnum">PHASE 1</div><div class="pname">Analyse des besoins</div><div class="pwks">Sem. 1</div><div class="pdot"></div></div>
-      <div class="phase done"   data-ph="2"><div class="pnum">PHASE 2</div><div class="pname">Objectifs pédagogiques</div><div class="pwks">Sem. 1–2</div><div class="pdot"></div></div>
-      <div class="phase active" data-ph="3"><div class="pnum">PHASE 3</div><div class="pname">Architecture & Storyboard</div><div class="pwks">Sem. 2–3</div><div class="pdot"></div></div>
-      <div class="phase"        data-ph="4"><div class="pnum">PHASE 4</div><div class="pname">Production modules</div><div class="pwks">Sem. 3–5</div><div class="pdot"></div></div>
-      <div class="phase"        data-ph="5"><div class="pnum">PHASE 5</div><div class="pname">Tests & Intégration LMS</div><div class="pwks">Sem. 5–6</div><div class="pdot"></div></div>
-      <div class="phase"        data-ph="6"><div class="pnum">PHASE 6</div><div class="pname">Livraison & Certification</div><div class="pwks">Sem. 6</div><div class="pdot"></div></div>
-    </div>
-    <div style="margin-top:7px;font-size:8px;color:var(--t3);display:flex;gap:12px">
-      <span style="color:var(--grn)">● Terminé</span><span style="color:var(--red)">● En cours</span><span style="color:var(--b2)">● À venir</span>
-    </div>
-  </div>
-
-  <!-- LIVRABLES + PUBLIC + TRIPLE PRIORITÉ + MÉMOIRE -->
-  <div class="card card-half">
-    <div class="ctitle">📦 Livrables — ✓ statut · 📝 · 📎 · 🎯 · 📁</div>
-    <ul class="lvlist" id="lvlist"></ul>
-    <div class="addrow">
-      <input class="addinp" id="lvinp" placeholder="Ajouter un livrable…">
-      <button class="addbtn" onclick="addLivrable()">+ Ajouter</button>
-    </div>
-  </div>
-
-  <div style="display:flex;flex-direction:column;gap:11px">
-    <!-- PUBLIC CIBLE -->
-    <div class="card">
-      <div class="ctitle">👥 Public Cible</div>
-      <div class="pgrid" id="pgrid"></div>
-      <div class="addrow" style="margin-top:8px">
-        <input class="addinp" id="pcInp" placeholder="Nouvelle étiquette…">
-        <button class="addbtn" onclick="addPC()">+ Ajouter</button>
+  <!-- OBJECTIF + KPIs + CHAÎNE + PHASES — pleine largeur -->
+  <div class="full-row">
+    <!-- OBJECTIF -->
+    <div class="card obj" id="card-objectif">
+      <div class="ctitle collapsible" data-target="card-objectif">🎯 Objectif Principal <span class="ctitle-collapse">▼</span></div>
+      <div class="card-body">
+        <div class="otxt">Concevoir, de A à Z, une formation e-learning <em>certifiante</em> sur l'IA —<br>seule, sans budget LMS, sans binôme, en 6 semaines.</div>
+        <div class="osub">Intitulé : « L'IA pour votre TPE : Améliorer sa TPE à l'aide de l'IA » · Public : dirigeants de TPE non-tech · Point de départ : zéro expérience en IP.</div>
       </div>
     </div>
 
-    <!-- TRIPLE PRIORITÉ -->
-    <div class="card">
-      <div class="ctitle">🏆 Triple Priorité — Auto-évaluation</div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div class="pi" style="border-left-color:var(--red)">
-          <div class="pit">🚀 Livrer</div>
-          <div class="pid">La formation certifiante complète, testable sur LMS</div>
-          <div id="g-livrer" style="margin-top:6px"></div>
-        </div>
-        <div class="pi" style="border-left-color:var(--gold)">
-          <div class="pit">📚 Apprendre</div>
-          <div class="pid">Maîtriser le métier d'IP en marchant — sans filet</div>
-          <div id="g-apprendre" style="margin-top:6px"></div>
-        </div>
-        <div class="pi" style="border-left-color:var(--grn)">
-          <div class="pit">✅ Convaincre</div>
-          <div class="pid">Prouver à la tutrice la valeur de ce travail</div>
-          <div id="g-convaincre" style="margin-top:6px"></div>
-        </div>
+    <!-- KPIs -->
+    <div class="krow" id="krow"></div>
+
+    <!-- CHAÎNE -->
+    <div class="card chsec" id="card-chaine">
+      <div class="ctitle collapsible" data-target="card-chaine">⛓️ Chaîne de Fabrication — Cliquer pour lire · 📝 remarques · 🎯 prompts <span class="ctitle-collapse">▼</span></div>
+      <div class="card-body">
+        <div class="chflow" id="chflow"></div>
+        <div class="chdet" id="chdet"></div>
+        <div id="chRzc"></div>
       </div>
     </div>
 
-    <!-- MÉMOIRE -->
-    <div class="card">
-      <div class="ctitle">📖 Mémoire — Dépôt des rédactions</div>
-      <div id="memoireList"></div>
-      <div class="addrow">
-        <input class="addinp" id="memInp" placeholder="Nouvelle rubrique (ex: Cadre théorique)…">
-        <button class="addbtn" onclick="addMemRub()">+ Rubrique</button>
+    <!-- PHASES -->
+    <div class="card phsec" id="card-phases">
+      <div class="ctitle collapsible" data-target="card-phases">📅 Phases — Cliquer pour basculer <span class="ctitle-collapse">▼</span></div>
+      <div class="card-body">
+        <div class="phgrid">
+          <div class="phase done"   data-ph="1"><div class="pnum">PHASE 1</div><div class="pname">Analyse des besoins</div><div class="pwks">Sem. 1</div><div class="pdot"></div></div>
+          <div class="phase done"   data-ph="2"><div class="pnum">PHASE 2</div><div class="pname">Objectifs pédagogiques</div><div class="pwks">Sem. 1–2</div><div class="pdot"></div></div>
+          <div class="phase active" data-ph="3"><div class="pnum">PHASE 3</div><div class="pname">Architecture & Storyboard</div><div class="pwks">Sem. 2–3</div><div class="pdot"></div></div>
+          <div class="phase"        data-ph="4"><div class="pnum">PHASE 4</div><div class="pname">Production modules</div><div class="pwks">Sem. 3–5</div><div class="pdot"></div></div>
+          <div class="phase"        data-ph="5"><div class="pnum">PHASE 5</div><div class="pname">Tests & Intégration LMS</div><div class="pwks">Sem. 5–6</div><div class="pdot"></div></div>
+          <div class="phase"        data-ph="6"><div class="pnum">PHASE 6</div><div class="pname">Livraison & Certification</div><div class="pwks">Sem. 6</div><div class="pdot"></div></div>
+        </div>
+        <div style="margin-top:7px;font-size:8px;color:var(--t3);display:flex;gap:12px">
+          <span style="color:var(--grn)">● Terminé</span><span style="color:var(--red)">● En cours</span><span style="color:var(--b2)">● À venir</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- OUTILS | DIFFICULTÉS | NON-NÉGOCIABLES -->
-  <div class="card">
-    <div class="ctitle">🛠️ Outils — 📝 · 📎 · 🎯 · 📁</div>
-    <div class="ochain" id="ochain"></div>
-    <div class="addrow" style="margin-top:8px">
-      <input class="addinp" id="oinp" placeholder="Ajouter un outil…">
-      <button class="addbtn" onclick="addOutil()">+ Ajouter</button>
-    </div>
-  </div>
+  <!-- 2 COLONNES -->
+  <div class="two-cols">
 
-  <div class="card">
-    <div class="ctitle">🔴 Difficultés — 📝 · 📎 · 📁</div>
-    <div class="dlist" id="dlist"></div>
-    <div class="addrow" style="margin-top:8px">
-      <input class="addinp" id="dinp" placeholder="Ajouter une difficulté…">
-      <button class="addbtn" onclick="addDiff()">+ Ajouter</button>
-    </div>
-  </div>
+    <!-- COLONNE GAUCHE : Expérience pratique -->
+    <div class="col-drop" id="col-left" data-col="left">
 
-  <div class="card">
-    <div class="ctitle">🔒 Non-Négociables — 📝 · 📎 · 📁</div>
-    <div class="nngrid" id="nngrid"></div>
-    <div class="addrow" style="margin-top:8px">
-      <input class="addinp" id="nninp" placeholder="Ajouter un non-négociable…">
-      <button class="addbtn" onclick="addNN()">+ Ajouter</button>
-    </div>
-  </div>
+      <!-- LIVRABLES -->
+      <div class="card draggable-card" id="card-livrables" data-col="left">
+        <div class="ctitle collapsible" data-target="card-livrables">
+          <span class="card-drag-handle">⠿</span>
+          📦 Livrables — ✓ statut · 📝 · 📎 · 🎯 · 📁
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <ul class="lvlist" id="lvlist"></ul>
+          <div class="addrow">
+            <input class="addinp" id="lvinp" placeholder="Ajouter un livrable…">
+            <button class="addbtn" onclick="addLivrable()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
 
-  <!-- REMARQUES GLOBALES -->
-  <div class="card gsec">
-    <div class="ctitle">📝 Remarques Générales</div>
-    <div class="glist" id="glist"><div class="gempty">Aucune remarque. Écris ci-dessous ↓</div></div>
-    <div class="addrow">
-      <textarea class="gtarea" id="ginp" rows="2" placeholder="Observation globale, note de terrain…"></textarea>
-      <button class="addbtn" onclick="addGlobal()">Ajouter</button>
+      <!-- OUTILS -->
+      <div class="card draggable-card" id="card-outils" data-col="left">
+        <div class="ctitle collapsible" data-target="card-outils">
+          <span class="card-drag-handle">⠿</span>
+          🛠️ Outils — 📝 · 📎 · 🎯 · 📁
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="ochain" id="ochain"></div>
+          <div class="addrow" style="margin-top:8px">
+            <input class="addinp" id="oinp" placeholder="Ajouter un outil…">
+            <button class="addbtn" onclick="addOutil()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIFFICULTÉS -->
+      <div class="card draggable-card" id="card-diffs" data-col="left">
+        <div class="ctitle collapsible" data-target="card-diffs">
+          <span class="card-drag-handle">⠿</span>
+          🔴 Difficultés — 📝 · 📎 · 📁
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="dlist" id="dlist"></div>
+          <div class="addrow" style="margin-top:8px">
+            <input class="addinp" id="dinp" placeholder="Ajouter une difficulté…">
+            <button class="addbtn" onclick="addDiff()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NON-NÉGOCIABLES -->
+      <div class="card draggable-card" id="card-nns" data-col="left">
+        <div class="ctitle collapsible" data-target="card-nns">
+          <span class="card-drag-handle">⠿</span>
+          🔒 Non-Négociables — 📝 · 📎 · 📁
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="nngrid" id="nngrid"></div>
+          <div class="addrow" style="margin-top:8px">
+            <input class="addinp" id="nninp" placeholder="Ajouter un non-négociable…">
+            <button class="addbtn" onclick="addNN()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPÉTENCES -->
+      <div class="card draggable-card" id="card-competences" data-col="left">
+        <div class="ctitle collapsible" data-target="card-competences">
+          <span class="card-drag-handle">⠿</span>
+          🎓 Compétences / Savoirs développés
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div id="complist" style="display:flex;flex-direction:column;gap:8px;margin:10px 0"></div>
+          <div class="addrow">
+            <input class="addinp" id="compInp" placeholder="Ajouter une compétence…">
+            <button class="addbtn" onclick="addComp()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div class="card draggable-card" id="card-notes" data-col="left">
+        <div class="ctitle collapsible" data-target="card-notes">
+          <span class="card-drag-handle">⠿</span>
+          🗒️ Notes
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div id="noteslist" style="display:flex;flex-direction:column;gap:6px;min-height:20px;margin-bottom:8px"><div class="gempty">Aucune note. Écris ci-dessous ↓</div></div>
+          <div class="addrow">
+            <textarea class="gtarea" id="noteinp" rows="3" placeholder="Note libre, idée, réflexion…" style="flex:1"></textarea>
+            <button class="addbtn" onclick="addNote()">Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLONNE DROITE : Mémoire & Réflexion -->
+    <div class="col-drop" id="col-right" data-col="right">
+
+      <!-- MÉMOIRE -->
+      <div class="card draggable-card" id="card-memoire" data-col="right">
+        <div class="ctitle collapsible" data-target="card-memoire">
+          <span class="card-drag-handle">⠿</span>
+          📖 Mémoire — Dépôt des rédactions
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div id="memoireList"></div>
+          <div class="addrow">
+            <input class="addinp" id="memInp" placeholder="Nouvelle rubrique (ex: Cadre théorique)…">
+            <button class="addbtn" onclick="addMemRub()">+ Rubrique</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUBLIC CIBLE -->
+      <div class="card draggable-card" id="card-public" data-col="right">
+        <div class="ctitle collapsible" data-target="card-public">
+          <span class="card-drag-handle">⠿</span>
+          👥 Public Cible
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="pgrid" id="pgrid"></div>
+          <div class="addrow" style="margin-top:8px">
+            <input class="addinp" id="pcInp" placeholder="Nouvelle étiquette…">
+            <button class="addbtn" onclick="addPC()">+ Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRIPLE PRIORITÉ -->
+      <div class="card draggable-card" id="card-priorite" data-col="right">
+        <div class="ctitle collapsible" data-target="card-priorite">
+          <span class="card-drag-handle">⠿</span>
+          🏆 Triple Priorité — Auto-évaluation
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="pi" style="border-left-color:var(--red)">
+              <div class="pit">🚀 Livrer</div>
+              <div class="pid">La formation certifiante complète, testable sur LMS</div>
+              <div id="g-livrer" style="margin-top:6px"></div>
+            </div>
+            <div class="pi" style="border-left-color:var(--gold)">
+              <div class="pit">📚 Apprendre</div>
+              <div class="pid">Maîtriser le métier d'IP en marchant — sans filet</div>
+              <div id="g-apprendre" style="margin-top:6px"></div>
+            </div>
+            <div class="pi" style="border-left-color:var(--grn)">
+              <div class="pit">✅ Convaincre</div>
+              <div class="pid">Prouver à la tutrice la valeur de ce travail</div>
+              <div id="g-convaincre" style="margin-top:6px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REMARQUES GÉNÉRALES -->
+      <div class="card draggable-card gsec" id="card-remarques" data-col="right">
+        <div class="ctitle collapsible" data-target="card-remarques">
+          <span class="card-drag-handle">⠿</span>
+          📝 Remarques Générales
+          <span class="ctitle-collapse">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="glist" id="glist"><div class="gempty">Aucune remarque. Écris ci-dessous ↓</div></div>
+          <div class="addrow">
+            <textarea class="gtarea" id="ginp" rows="2" placeholder="Observation globale, note de terrain…"></textarea>
+            <button class="addbtn" onclick="addGlobal()">Ajouter</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -801,15 +991,17 @@ const INIT_LV=[
   {id:'l8',name:'Évaluation certifiante',        det:'Quiz + grille d\'évaluation des compétences',                  status:'todo', difficulty:0,notes:[],media:[],prompts:[],files:[]},
 ];
 const INIT_OT=[
-  {id:'o1',cls:'odec',svgKey:'gemini',    name:'Gemini',              role:'Premier essai — trop abstrait, abandonné',                  tag:'DÉCEPTION',   tagcls:'tk',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o2',cls:'opiv',svgKey:'claude',    name:'Claude',              role:'Cerveau — contenu, scénario, objectifs, quiz',              tag:'PIVOT',       tagcls:'tp',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'oF',cls:'otr', svgKey:'flow',      name:'Flow',                role:'Dictée vocale universelle — Ctrl+Win, compatible partout',  tag:'TRANSVERSAL', tagcls:'tt',difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o1',cls:'odec',svgKey:'gemini',    name:'Gemini',              role:'Premier essai — trop abstrait, abandonné',                  tag:'DÉCEPTION',   tagcls:'tk', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o2',cls:'opiv',svgKey:'claude',    name:'Claude',              role:'Cerveau — contenu, scénario, objectifs, quiz',              tag:'PIVOT',       tagcls:'tp', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'oW',cls:'opiv',svgKey:'webinaire', name:'Webinaire Studer.ia', role:'Pivot — découverte Claude',                                 tag:'PIVOT',       tagcls:'tp', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'oF',cls:'otr', svgKey:'flow',      name:'Flow',                role:'Dictée vocale universelle — Ctrl+Win, compatible partout',  tag:'TRANSVERSAL', tagcls:'tt', difficulty:0,notes:[],media:[],prompts:[],files:[]},
   {id:'o3',cls:'obug',svgKey:'canvas',    name:'Gemini Canvas',       role:'Code interactif — hallucinations fréquentes',               tag:'BUGUE',       tagcls:'tbu',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'oE',cls:'ovoc',svgKey:'elevenlabs',name:'ElevenLabs',          role:'Voix synthétique → fichier audio → intégré dans le HTML',  tag:'VOCAL',       tagcls:'tv',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o4',cls:'ook', svgKey:'livehtml',  name:'LiveHTML / CodePen',  role:'Visualisation du code avant retouche',                      tag:'OK',          tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o5',cls:'ook', svgKey:'codex',     name:'Codex',               role:'Affinage, correction, optimisation',                        tag:'OK',          tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o6',cls:'ook', svgKey:'github',    name:'GitHub',              role:'Stockage versions + pont déploiement',                      tag:'OK',          tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o7',cls:'ook', svgKey:'netlify',   name:'Netlify → G.Classroom',role:'URL intégrable dans le LMS de substitution',              tag:'OK',          tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'oE',cls:'ovoc',svgKey:'elevenlabs',name:'ElevenLabs',          role:'Voix synthétique → fichier audio → intégré dans le HTML',  tag:'VOCAL',       tagcls:'tv', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o4',cls:'ook', svgKey:'livehtml',  name:'LiveHTML / CodePen',  role:'Visualisation du code avant retouche',                      tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o5',cls:'ook', svgKey:'codex',     name:'Codex',               role:'Affinage, correction, optimisation',                        tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o6',cls:'ook', svgKey:'github',    name:'GitHub',              role:'Stockage versions + pont déploiement',                      tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o7',cls:'ook', svgKey:'netlify',   name:'Netlify',             role:'Déploiement URL publique',                                  tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o8',cls:'ook', svgKey:'classroom', name:'Google Classroom',    role:'LMS de substitution — budget zéro',                         tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
 ];
 const INIT_DF=[
   {id:'d1',ico:'🧍',title:'Solitude décisionnelle',  sub:'Personne pour valider au fil de l\'eau — doute permanent',                  notes:[],media:[],files:[]},
@@ -841,7 +1033,7 @@ const INIT_MEM=[
 let STATE={
   livrables:[], outils:[], diffs:[], nns:[], memoire:[],
   chNotes:{}, chMedia:{}, chPrompts:{}, chFiles:{},
-  phases:{}, globals:[],
+  phases:{}, globals:[], notes:[], competences:[],
   autoeval:{livrer:0,apprendre:0,convaincre:0},
   savedAt:null
 };
@@ -871,11 +1063,132 @@ function markClean(){
   document.getElementById('sdot').classList.remove('dirty');
   document.getElementById('sstatus').textContent='Tout est sauvegardé';
 }
-function toast(msg,col){
+
+/* ══ SYSTÈME D'ANNULATION UNIVERSEL ══ */
+let _undoStack = []; // {label, restore: fn}
+let _toastTimer = null;
+
+function toast(msg, col){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.style.borderLeftColor=col||'var(--grn)';
-  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400);
+  // Supprimer le bouton annuler si présent
+  const btn=t.querySelector('.toast-undo');
+  if(btn) btn.remove();
+  t.firstChild && t.firstChild.nodeType===3 && (t.firstChild.textContent=msg);
+  if(!t.firstChild || t.firstChild.nodeType!==3){
+    const span=document.createTextNode(msg);
+    t.insertBefore(span,t.firstChild);
+  }
+  t.style.borderLeftColor=col||'var(--grn)';
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
 }
+
+function toastUndo(msg, restoreFn){
+  const t=document.getElementById('toast');
+  // Vider le toast
+  t.innerHTML='';
+  const span=document.createElement('span');
+  span.textContent=msg;
+  t.appendChild(span);
+  const btn=document.createElement('button');
+  btn.className='toast-undo';
+  btn.textContent='Annuler';
+  btn.onclick=()=>{
+    restoreFn();
+    t.classList.remove('show');
+    clearTimeout(_toastTimer);
+    toast('✓ Restauré');
+    markDirty();
+  };
+  t.appendChild(btn);
+  t.style.borderLeftColor='var(--orn)';
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),5000);
+}
+
+function softDelete(arr, item, renderFn, msg){
+  // Confirmation avant suppression
+  const confirmEl = document.createElement('div');
+  confirmEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center';
+  confirmEl.innerHTML = `<div style="background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:24px 28px;text-align:center;max-width:320px">
+    <div style="font-size:13px;color:var(--t1);margin-bottom:16px">⚠️ Supprimer <strong>${msg||'cet élément'}</strong> ?<br><span style="font-size:11px;color:var(--t3)">Tu pourras annuler pendant 5 secondes.</span></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button id="confirm-no" style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px">Annuler</button>
+      <button id="confirm-yes" style="background:var(--red);border:none;color:white;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px;font-weight:700">Supprimer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(confirmEl);
+  confirmEl.querySelector('#confirm-no').onclick = () => document.body.removeChild(confirmEl);
+  confirmEl.querySelector('#confirm-yes').onclick = () => {
+    document.body.removeChild(confirmEl);
+    const idx = arr.indexOf(item);
+    if(idx < 0) return;
+    arr.splice(idx, 1);
+    renderFn();
+    markDirty();
+    toastUndo(`${msg||'Élément'} supprimé`, () => {
+      arr.splice(idx, 0, item);
+      renderFn();
+    });
+  };
+}
+
+/* ══ KPIs ÉDITABLES ══ */
+const DEFAULT_KPIS = [
+  {val:'6',   lbl:'Semaines pour livrer', fixed:false},
+  {val:'1',   lbl:'Personne sur la mission', fixed:false},
+  {val:'0€',  lbl:'Budget outils e-learning', fixed:false},
+  {val:'11',  lbl:'Outils dans la chaîne', id:'kpi-outils', fixed:true},
+];
+
+function getKpisData(){
+  const krow = document.getElementById('krow'); if(!krow) return null;
+  return [...krow.querySelectorAll('.kpi')].map(k=>({
+    val: k.querySelector('.kn').textContent.trim(),
+    lbl: k.querySelector('.kl').textContent.trim(),
+    id:  k.querySelector('.kn').id || null,
+    fixed: k.dataset.fixed === 'true'
+  }));
+}
+
+function renderKpis(){
+  const krow = document.getElementById('krow'); if(!krow) return;
+  const data = STATE.kpis || DEFAULT_KPIS;
+  krow.innerHTML = '';
+  data.forEach(k=>{
+    const el = document.createElement('div');
+    el.className = 'kpi';
+    el.dataset.fixed = k.fixed ? 'true' : 'false';
+    el.title = 'Cliquer pour modifier';
+    const kn = document.createElement('div'); kn.className='kn'; kn.textContent=k.val;
+    if(k.id) kn.id = k.id;
+    const kl = document.createElement('div'); kl.className='kl'; kl.textContent=k.lbl;
+    el.appendChild(kn); el.appendChild(kl);
+    krow.appendChild(el);
+
+    // Double-clic pour éditer (sauf KPI auto-calculé)
+    if(!k.fixed){
+      el.addEventListener('dblclick', ()=>{
+        el.classList.add('kpi-editing');
+        kn.contentEditable='true'; kl.contentEditable='true';
+        kn.focus();
+      });
+      const stopEdit = ()=>{
+        kn.contentEditable='false'; kl.contentEditable='false';
+        el.classList.remove('kpi-editing');
+        STATE.kpis = getKpisData();
+        markDirty();
+      };
+      kn.addEventListener('blur', stopEdit);
+      kl.addEventListener('blur', stopEdit);
+      kn.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); kl.focus(); } });
+      kl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); stopEdit(); } });
+    }
+  });
+}
+
 function saveAll(){
   const phases={};
   document.querySelectorAll('.phase').forEach(p=>{phases[p.dataset.ph]=p.classList.contains('done')?'done':p.classList.contains('active')?'active':'todo';});
@@ -887,6 +1200,8 @@ function saveAll(){
     document.getElementById('fdate').textContent='Sauvegardé le '+d.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     toast('✓ Sauvegardé');
     updateSBar();
+    // Sauvegarde automatique Drive
+    if(gdToken) gdSave();
   } catch(e){ toast('⚠️ Stockage plein — exporte ton JSON !','var(--orn)'); }
 }
 function loadAll(){
@@ -905,6 +1220,8 @@ function loadAll(){
       STATE.chPrompts=d.chPrompts||{};
       STATE.chFiles  =d.chFiles  ||{};
       STATE.globals  =d.globals  ||[];
+      STATE.notes    =d.notes    ||[];
+      STATE.competences=d.competences||JSON.parse(JSON.stringify(INIT_COMP));
       STATE.phases   =d.phases   ||{};
       STATE.autoeval =d.autoeval ||{livrer:0,apprendre:0,convaincre:0};
       STATE.publicCible=d.publicCible||JSON.parse(JSON.stringify(INIT_PC_DATA));
@@ -1061,7 +1378,7 @@ function makeGauge(obj,field,label){
    ZONE REMARQUES UNIVERSELLE
 ══════════════════════════════════ */
 const TCFG={tb:{lbl:'BLOQUÉ',cls:'tb'},td:{lbl:'DÉTOUR',cls:'td'},ti:{lbl:'INFO',cls:'ti'}};
-function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,promptBtn){
+function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,promptBtn,rubriqueName){
   const zone=document.createElement('div');zone.className='rzone';
   const hp=promptsRef!==null,hf=filesRef!==null;
   zone.innerHTML=`
@@ -1104,7 +1421,7 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
   // Médias
   renderMedia(zone.querySelector('.media-grid'),mediaRef);
   const [imgInp,vidInp]=zone.querySelectorAll('.media-upload-btn input');
-  imgInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>compress(f,data=>{mediaRef.push({id:uid(),type:'image',data,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();}));e.target.value='';});
+  imgInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>compress(f,data=>{mediaRef.push({id:uid(),type:'image',data,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();if(gdToken&&rubriqueName)uploadImageToDrive(data,rubriqueName);}));e.target.value='';});
   vidInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=ev=>{mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();};r.readAsDataURL(f);});e.target.value='';});
 
   // Fichiers
@@ -1226,18 +1543,6 @@ function refreshDrag(containerId, getItems, setItems, renderFn){
   const c=document.getElementById(containerId);
   if(c) makeDraggable(c, getItems, setItems, renderFn);
 }
-function renderChain(){
-  const flow=document.getElementById('chflow');flow.innerHTML='';
-  const keys=Object.keys(CHAIN_DATA);
-  keys.forEach((key,i)=>{
-    const d=CHAIN_DATA[key];
-    const step=document.createElement('div');step.className=`chstep ${d.cls}`;step.dataset.id=key;
-    step.innerHTML=`<div class="chbub">${SVGS[d.svgKey]||d.emi||'🔧'}</div><div class="chlbl">${d.lbl}</div><div class="chnote">${d.note}</div>`;
-    step.onclick=()=>toggleChain(key,step);
-    flow.appendChild(step);
-    if(i<keys.length-1){const a=document.createElement('div');a.className='charr';a.textContent='→';flow.appendChild(a);}
-  });
-}
 function toggleChain(key,step){
   const det=document.getElementById('chdet'),rzc=document.getElementById('chRzc');
   if(activeChKey===key){step.classList.remove('sel');det.classList.remove('open');det.innerHTML='';rzc.innerHTML='';activeChKey=null;return;}
@@ -1272,9 +1577,9 @@ function makeLivrable(lv){
   const row=document.createElement('div');row.className='lvrow';
   row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><div class="lvchk">${SCC[lv.status]}</div><div class="lvbody"><div class="lvname">${lv.name}</div><div class="lvdet">${lv.det}</div></div><span class="lvbadge ${SBB[lv.status]}">${SLL[lv.status]}</span><div class="lvacts"><button class="rbtn ${lv.notes&&lv.notes.length?'has':''}" title="Remarques">📝</button><button class="pbtn ${lv.prompts&&lv.prompts.length?'has':''}" title="Prompts">🎯</button><button class="delbtn">×</button></div>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(lv,'difficulty'));
-  mountRzone(wrap,lv.notes,lv.media,lv.prompts,lv.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'));
+  mountRzone(wrap,lv.notes,lv.media,lv.prompts,lv.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'),lv.name);
   row.querySelector('.lvchk').onclick=e=>{e.stopPropagation();lv.status=SCY[lv.status];wrap.className=SWW[lv.status];row.querySelector('.lvchk').textContent=SCC[lv.status];row.querySelector('.lvbadge').textContent=SLL[lv.status];row.querySelector('.lvbadge').className='lvbadge '+SBB[lv.status];markDirty();};
-  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ce livrable ?')){STATE.livrables=STATE.livrables.filter(x=>x.id!==lv.id);wrap.remove();markDirty();}};
+  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.livrables,lv,renderLivrables,'Livrable supprimé');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.pbtn,.delbtn,.lvchk'))return;wrap.classList.toggle('sel');};
   return wrap;
 }
@@ -1284,22 +1589,92 @@ document.getElementById('lvinp').addEventListener('keydown',e=>{if(e.key==='Ente
 /* ══════════════════════════════════
    OUTILS
 ══════════════════════════════════ */
+function renderChain(){
+  const flow=document.getElementById('chflow'); if(!flow) return;
+  flow.innerHTML='';
+
+  STATE.outils.forEach((ot,i)=>{
+    const step=document.createElement('div');
+    step.className=`chstep ${ot.cls}`;
+    step.dataset.id=ot.id;
+    step.setAttribute('draggable','true');
+    const logoHtml = ot.svgKey ? SVGS[ot.svgKey]||'' : makeAutoSvg(ot.name).replace(/^<div[^>]*>|<\/div>$/g,'');
+    step.innerHTML=`<div class="chbub">${logoHtml}</div><div class="chlbl">${ot.name}</div><div class="chnote">${ot.role}</div>`;
+
+    // Clic → détail (uniquement pour outils avec CHAIN_DATA)
+    step.onclick=(e)=>{
+      if(e.target.closest('.charr')) return;
+      const key = Object.keys(CHAIN_DATA).find(k=>CHAIN_DATA[k].lbl===ot.name);
+      if(key) toggleChain(key,step);
+    };
+
+    // Drag horizontal pour réordonner
+    step.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('outil-id', ot.id);
+      setTimeout(()=>step.classList.add('dragging'),0);
+    });
+    step.addEventListener('dragend',()=>step.classList.remove('dragging'));
+    step.addEventListener('dragover',e=>{ e.preventDefault(); step.classList.add('drag-over-chain'); });
+    step.addEventListener('dragleave',()=>step.classList.remove('drag-over-chain'));
+    step.addEventListener('drop',e=>{
+      e.preventDefault(); e.stopPropagation();
+      step.classList.remove('drag-over-chain');
+      const fromId=e.dataTransfer.getData('outil-id');
+      if(!fromId||fromId===ot.id) return;
+      const fromIdx=STATE.outils.findIndex(x=>x.id===fromId);
+      const toIdx=STATE.outils.findIndex(x=>x.id===ot.id);
+      if(fromIdx<0||toIdx<0) return;
+      const [moved]=STATE.outils.splice(fromIdx,1);
+      STATE.outils.splice(toIdx,0,moved);
+      renderChain();
+      renderOutils();
+      markDirty();
+    });
+
+    flow.appendChild(step);
+    if(i<STATE.outils.length-1){
+      const a=document.createElement('div');a.className='charr';a.textContent='→';flow.appendChild(a);
+    }
+  });
+
+  // KPI
+  const kpi=document.getElementById('kpi-outils');
+  if(kpi) kpi.textContent=STATE.outils.length;
+}
+
 function renderOutils(){
-  const chain=document.getElementById('ochain');chain.innerHTML='';
+  const chain=document.getElementById('ochain'); if(!chain) return;
+  chain.innerHTML='';
   STATE.outils.forEach(ot=>chain.appendChild(makeOutil(ot)));
-  makeDraggable(chain,()=>STATE.outils,v=>{STATE.outils=v;},renderOutils);
+  makeDraggable(chain,()=>STATE.outils,v=>{STATE.outils=v; renderChain();},renderOutils);
 }
 function makeOutil(ot){
   const wrap=document.createElement('div');wrap.className=`owrap ${ot.cls}`;wrap.dataset.id=ot.id;
   const row=document.createElement('div');row.className='orow';
-  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${svg(ot.svgKey)}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
+  const logoHtml = ot.svgKey ? svg(ot.svgKey) : makeAutoSvg(ot.name);
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${logoHtml}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(ot,'difficulty'));
-  mountRzone(wrap,ot.notes,ot.media,ot.prompts,ot.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'));
-  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ?')){STATE.outils=STATE.outils.filter(x=>x.id!==ot.id);wrap.remove();markDirty();}};
+  mountRzone(wrap,ot.notes,ot.media,ot.prompts,ot.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'),ot.name);
+  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.outils,ot,()=>{renderOutils();renderChain();},'Outil supprimé');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.pbtn,.delbtn'))return;wrap.classList.toggle('sel');};
   return wrap;
 }
-function addOutil(){const val=document.getElementById('oinp').value.trim();if(!val)return;const ot={id:uid(),cls:'ook',svgKey:null,name:val,role:'Ajouté manuellement',tag:'OK',tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]};STATE.outils.push(ot);document.getElementById('ochain').appendChild(makeOutil(ot));document.getElementById('oinp').value='';markDirty();}
+function makeAutoSvg(name){
+  const colors=['#E8533A','#4f9eff','#b86af0','#47CF73','#f0a500','#00C7B7','#6366f1'];
+  const initials=name.trim().split(/\s+/).map(w=>w[0]?.toUpperCase()||'').join('').substring(0,2)||'?';
+  const color=colors[name.charCodeAt(0)%colors.length];
+  return `<div class="ologo-auto" style="background:${color}">${initials}</div>`;
+}
+function addOutil(){
+  const val=document.getElementById('oinp').value.trim();if(!val)return;
+  const ot={id:uid(),cls:'ook',svgKey:null,name:val,role:'Ajouté manuellement',tag:'CUSTOM',tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]};
+  STATE.outils.push(ot);
+  // Re-render les DEUX vues synchronisées
+  renderOutils();
+  renderChain();
+  document.getElementById('oinp').value='';
+  markDirty();
+}
 document.getElementById('oinp').addEventListener('keydown',e=>{if(e.key==='Enter')addOutil();});
 
 /* ══════════════════════════════════
@@ -1315,8 +1690,8 @@ function makeDiff(df){
   const row=document.createElement('div');row.className='drow';
   row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><span class="dico">${df.ico}</span><div class="dtext"><strong>${df.title}</strong><span>${df.sub}</span></div><button class="rbtn ${df.notes&&df.notes.length?'has':''}">📝</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);
-  mountRzone(wrap,df.notes,df.media,null,df.files,row.querySelector('.rbtn'),null);
-  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ?')){STATE.diffs=STATE.diffs.filter(x=>x.id!==df.id);wrap.remove();markDirty();}};
+  mountRzone(wrap,df.notes,df.media,null,df.files,row.querySelector('.rbtn'),null,df.title);
+  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.diffs,df,renderDiffs,'Difficulté supprimée');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.delbtn'))return;wrap.classList.toggle('sel');};
   return wrap;
 }
@@ -1336,8 +1711,8 @@ function makeNN(nn){
   const row=document.createElement('div');row.className='nnrow';
   row.innerHTML=`<span class="drag-handle" title="Déplacer" style="position:absolute;left:6px;top:10px">⠿</span><span class="nnnum" style="margin-left:14px">${nn.num}</span><span class="nntxt">${nn.txt}</span><button class="rbtn ${nn.notes&&nn.notes.length?'has':''}" style="position:absolute;right:22px;top:8px">📝</button><button class="delbtn" style="position:absolute;right:6px;top:8px">×</button>`;
   wrap.appendChild(row);
-  mountRzone(wrap,nn.notes,nn.media,null,nn.files,row.querySelector('.rbtn'),null);
-  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();if(confirm('Supprimer ?')){STATE.nns=STATE.nns.filter(x=>x.id!==nn.id);wrap.remove();markDirty();}};
+  mountRzone(wrap,nn.notes,nn.media,null,nn.files,row.querySelector('.rbtn'),null,nn.txt);
+  row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.nns,nn,renderNNs,'Non-négociable supprimé');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.delbtn'))return;wrap.classList.toggle('sel');};
   return wrap;
 }
@@ -1374,7 +1749,7 @@ function makeMemRub(r){
   ta.addEventListener('input',()=>{r.text=ta.value;chars.textContent=`${ta.value.length} car.`;markDirty();});
   body.appendChild(ta);body.appendChild(chars);wrap.appendChild(body);
   hdr.addEventListener('click',e=>{if(e.target.classList.contains('mem-delbtn'))return;const o=body.classList.toggle('open');hdr.querySelector('.mem-toggle').classList.toggle('open',o);});
-  if(!r.fixed){hdr.querySelector('.mem-delbtn').addEventListener('click',e=>{e.stopPropagation();if(confirm(`Supprimer "${r.title}" ?`)){STATE.memoire=STATE.memoire.filter(x=>x.id!==r.id);wrap.remove();markDirty();}});}
+  if(!r.fixed){hdr.querySelector('.mem-delbtn').addEventListener('click',e=>{e.stopPropagation();softDelete(STATE.memoire,r,renderMemoire,`"${r.title}" supprimé`);});}
   return wrap;
 }
 function addMemRub(){const val=document.getElementById('memInp').value.trim();if(!val)return;const r={id:uid(),icon:'📝',title:val,text:'',files:[],fixed:false};STATE.memoire.push(r);const list=document.getElementById('memoireList');const el=makeMemRub(r);list.appendChild(el);el.querySelector('.mem-body').classList.add('open');el.querySelector('.mem-toggle').classList.add('open');document.getElementById('memInp').value='';markDirty();}
@@ -1384,7 +1759,7 @@ document.getElementById('memInp').addEventListener('keydown',e=>{if(e.key==='Ent
    REMARQUES GLOBALES
 ══════════════════════════════════ */
 function renderGlobals(){const list=document.getElementById('glist');if(!STATE.globals.length){list.innerHTML='<div class="gempty">Aucune remarque. Écris ci-dessous ↓</div>';return;}list.innerHTML='';STATE.globals.forEach(g=>list.appendChild(makeGlobal(g)));}
-function makeGlobal(g){const d=document.createElement('div');d.className='gitem';d.innerHTML=`<span class="gdate">${g.date}</span><span class="gbody">${g.text.replace(/\n/g,'<br>')}</span><button class="gdel">×</button>`;d.querySelector('.gdel').onclick=()=>{STATE.globals=STATE.globals.filter(x=>x.id!==g.id);renderGlobals();markDirty();};return d;}
+function makeGlobal(g){const d=document.createElement('div');d.className='gitem';d.innerHTML=`<span class="gdate">${g.date}</span><span class="gbody">${g.text.replace(/\n/g,'<br>')}</span><button class="gdel">×</button>`;d.querySelector('.gdel').onclick=()=>{softDelete(STATE.globals,g,renderGlobals,'Remarque supprimée');};return d;}
 function addGlobal(){const val=document.getElementById('ginp').value.trim();if(!val)return;STATE.globals.push({id:uid(),text:val,date:now()});renderGlobals();document.getElementById('ginp').value='';markDirty();}
 document.getElementById('ginp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addGlobal();}});
 
@@ -1403,7 +1778,7 @@ function initTheme(){if(localStorage.getItem('kb_theme')==='light'){document.bod
    RENDER ALL + INIT
 ══════════════════════════════════ */
 function renderAll(){
-  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC();
+  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC(); renderNotesList(); renderComps(); renderKpis();
   if(!STATE.autoeval)STATE.autoeval={livrer:0,apprendre:0,convaincre:0};
   [{id:'g-livrer',k:'livrer'},{id:'g-apprendre',k:'apprendre'},{id:'g-convaincre',k:'convaincre'}].forEach(({id,k})=>{
     const el=document.getElementById(id);if(el){el.innerHTML='';el.appendChild(makeGauge(STATE.autoeval,k,'Avancement'));}
@@ -1430,7 +1805,7 @@ function makePC(pc){
   el.innerHTML=`<span class="drag-handle" style="position:absolute;left:5px;top:8px;font-size:10px">⠿</span><div class="pit" style="padding-left:14px" contenteditable="true" spellcheck="false">${pc.titre}</div><div class="pid" style="padding-left:14px" contenteditable="true" spellcheck="false">${pc.texte}</div><button class="delbtn" style="position:absolute;right:4px;top:4px">×</button>`;
   el.querySelector('.pit').addEventListener('blur',e=>{pc.titre=e.target.textContent.trim();markDirty();});
   el.querySelector('.pid').addEventListener('blur',e=>{pc.texte=e.target.textContent.trim();markDirty();});
-  el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();STATE.publicCible=STATE.publicCible.filter(x=>x.id!==pc.id);el.remove();markDirty();});
+  el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();softDelete(STATE.publicCible,pc,renderPC,'Étiquette supprimée');});
   return el;
 }
 function addPC(){
@@ -1467,9 +1842,243 @@ async function genCompteRendu(){
 function copyCR(){ navigator.clipboard.writeText(_crText).then(()=>toast('📋 Copié !')); }
 function dlCR(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([_crText],{type:'text/plain'})); a.download='compte-rendu-karima.txt'; a.click(); }
 
+/* ══ NOTES ══ */
+function renderNotesList(){
+  const list=document.getElementById('noteslist'); if(!list) return;
+  if(!STATE.notes||!STATE.notes.length){list.innerHTML='<div class="gempty">Aucune note. Écris ci-dessous ↓</div>';return;}
+  list.innerHTML='';
+  STATE.notes.forEach(n=>{
+    const d=document.createElement('div'); d.className='gitem';
+    d.innerHTML=`<span class="gdate">${n.date}</span><span class="gbody">${n.text.replace(/\n/g,'<br>')}</span><button class="gdel">×</button>`;
+    d.querySelector('.gdel').onclick=()=>{softDelete(STATE.notes,n,renderNotesList,'Note supprimée');};
+    list.appendChild(d);
+  });
+}
+function addNote(){
+  const val=document.getElementById('noteinp').value.trim(); if(!val) return;
+  if(!STATE.notes) STATE.notes=[];
+  STATE.notes.push({id:uid(),text:val,date:now()});
+  renderNotesList(); document.getElementById('noteinp').value=''; markDirty();
+}
+document.getElementById('noteinp')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addNote();}});
+
+/* ══ CAPTURES → DRIVE ══ */
+async function uploadImageToDrive(base64Data, rubriqueName){
+  if(!gdToken){ toast('Connecte-toi d\'abord à Drive','var(--orn)'); return null; }
+  try{
+    // Convertir base64 en blob
+    const byteStr = atob(base64Data.split(',')[1]);
+    const mimeType = base64Data.split(';')[0].split(':')[1];
+    const ab = new ArrayBuffer(byteStr.length);
+    const ia = new Uint8Array(ab);
+    for(let i=0;i<byteStr.length;i++) ia[i]=byteStr.charCodeAt(i);
+    const blob = new Blob([ab], {type: mimeType});
+
+    // Nom du fichier avec rubrique et date
+    const date = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
+    const filename = `${rubriqueName} — ${date}.png`;
+
+    // Créer le fichier sur Drive
+    const meta = JSON.stringify({name: filename, parents: ['appDataFolder']});
+    const form = new FormData();
+    form.append('metadata', new Blob([meta],{type:'application/json'}));
+    form.append('file', blob);
+
+    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+gdToken},
+      body: form
+    });
+    const data = await r.json();
+    if(data.id){
+      toast(`📸 Capture sauvegardée sur Drive — ${filename}`);
+      return {driveId: data.id, driveName: filename};
+    }
+  } catch(e){ toast('⚠️ Erreur upload Drive','var(--orn)'); }
+  return null;
+}
+
+/* ══ COLLAPSE & DRAG BLOCS ══ */
+function toggleCard(id){
+  const c=document.getElementById(id); if(!c) return;
+  c.classList.toggle('collapsed');
+}
+
+function initCollapseAndDrag(){
+  // COLLAPSE — tous les .collapsible
+  document.querySelectorAll('.ctitle.collapsible').forEach(ct=>{
+    ct.addEventListener('click', e=>{
+      if(e.target.classList.contains('card-drag-handle')) return;
+      const cardId=ct.getAttribute('data-target');
+      const card=cardId ? document.getElementById(cardId) : ct.closest('.card');
+      if(card) card.classList.toggle('collapsed');
+    });
+  });
+
+  // DRAG & DROP des cartes entre colonnes
+  let dragCard=null;
+  document.querySelectorAll('.draggable-card').forEach(card=>{
+    const handle=card.querySelector('.card-drag-handle');
+    if(!handle) return;
+
+    handle.addEventListener('mousedown', e=>{
+      e.stopPropagation();
+      card.setAttribute('draggable','true');
+    });
+    card.addEventListener('dragstart', e=>{
+      dragCard=card;
+      setTimeout(()=>card.classList.add('dragging-card'),0);
+      e.dataTransfer.effectAllowed='move';
+    });
+    card.addEventListener('dragend', ()=>{
+      card.classList.remove('dragging-card');
+      card.setAttribute('draggable','false');
+      document.querySelectorAll('.drag-over-card').forEach(c=>c.classList.remove('drag-over-card'));
+      document.querySelectorAll('.drag-over-col').forEach(c=>c.classList.remove('drag-over-col'));
+      dragCard=null;
+      saveCardOrder();
+    });
+    card.addEventListener('dragover', e=>{ e.preventDefault(); if(card!==dragCard) card.classList.add('drag-over-card'); });
+    card.addEventListener('dragleave', ()=>card.classList.remove('drag-over-card'));
+    card.addEventListener('drop', e=>{
+      e.preventDefault(); e.stopPropagation();
+      card.classList.remove('drag-over-card');
+      if(!dragCard||dragCard===card) return;
+      card.parentNode.insertBefore(dragCard, card);
+    });
+
+    // Touch mobile
+    let touchStart=null;
+    handle.addEventListener('touchstart', e=>{ touchStart=e.touches[0].clientY; card.classList.add('dragging-card'); },{passive:true});
+    handle.addEventListener('touchmove', e=>{
+      e.preventDefault();
+      const y=e.touches[0].clientY;
+      const col=card.closest('.col-drop');
+      if(!col) return;
+      const siblings=[...col.querySelectorAll('.draggable-card')].filter(c=>c!==card);
+      col.querySelectorAll('.drag-over-card').forEach(c=>c.classList.remove('drag-over-card'));
+      const target=siblings.find(c=>{ const r=c.getBoundingClientRect(); return y>=r.top&&y<=r.bottom; });
+      if(target) target.classList.add('drag-over-card');
+    },{passive:false});
+    handle.addEventListener('touchend', e=>{
+      card.classList.remove('dragging-card');
+      const y=e.changedTouches[0].clientY;
+      const col=card.closest('.col-drop');
+      if(col){
+        const siblings=[...col.querySelectorAll('.draggable-card')].filter(c=>c!==card);
+        col.querySelectorAll('.drag-over-card').forEach(c=>c.classList.remove('drag-over-card'));
+        const target=siblings.find(c=>{ const r=c.getBoundingClientRect(); return y>=r.top&&y<=r.bottom; });
+        if(target) col.insertBefore(card, target);
+      }
+      saveCardOrder();
+    },{passive:true});
+  });
+
+  // Drop sur colonne vide
+  document.querySelectorAll('.col-drop').forEach(col=>{
+    col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('drag-over-col'); });
+    col.addEventListener('dragleave', ()=>col.classList.remove('drag-over-col'));
+    col.addEventListener('drop', e=>{
+      e.preventDefault();
+      col.classList.remove('drag-over-col');
+      if(dragCard) col.appendChild(dragCard);
+    });
+  });
+
+  // Restaurer l'ordre sauvegardé
+  restoreCardOrder();
+}
+
+function saveCardOrder(){
+  const order={};
+  document.querySelectorAll('.col-drop').forEach(col=>{
+    const colId=col.id;
+    order[colId]=[...col.querySelectorAll('.draggable-card')].map(c=>c.id);
+  });
+  localStorage.setItem('kb_card_order', JSON.stringify(order));
+}
+
+function restoreCardOrder(){
+  try{
+    const saved=localStorage.getItem('kb_card_order');
+    if(!saved) return;
+    const order=JSON.parse(saved);
+    Object.entries(order).forEach(([colId, cardIds])=>{
+      const col=document.getElementById(colId);
+      if(!col) return;
+      cardIds.forEach(cardId=>{
+        const card=document.getElementById(cardId);
+        if(card) col.appendChild(card);
+      });
+    });
+  } catch(e){}
+}
+
+/* ══ COMPÉTENCES ══ */
+const INIT_COMP=[
+  {id:'c1',nom:'Concevoir un dispositif e-learning certifiant',eval:0,notes:[],media:[],files:[]},
+  {id:'c2',nom:'Appliquer la méthode ADDIE en situation réelle',eval:0,notes:[],media:[],files:[]},
+  {id:'c3',nom:'Rédiger des objectifs pédagogiques (taxonomie de Bloom)',eval:0,notes:[],media:[],files:[]},
+  {id:'c4',nom:'Scénariser un module e-learning',eval:0,notes:[],media:[],files:[]},
+  {id:'c5',nom:'Coder en HTML/CSS/JS un module interactif',eval:0,notes:[],media:[],files:[]},
+  {id:'c6',nom:'Déployer un module sur une plateforme LMS',eval:0,notes:[],media:[],files:[]},
+  {id:'c7',nom:'Utiliser l\'IA générative comme outil de conception',eval:0,notes:[],media:[],files:[]},
+  {id:'c8',nom:'Vulgariser des concepts techniques pour non-experts',eval:0,notes:[],media:[],files:[]},
+];
+
+function renderComps(){
+  if(!STATE.competences||!STATE.competences.length) STATE.competences=JSON.parse(JSON.stringify(INIT_COMP));
+  const list=document.getElementById('complist'); if(!list) return;
+  list.innerHTML='';
+  STATE.competences.forEach(c=>list.appendChild(makeComp(c)));
+  makeDraggable(list,()=>STATE.competences,v=>{STATE.competences=v;},renderComps);
+}
+
+function makeComp(c){
+  const el=document.createElement('div'); el.className='comp-item';
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="drag-handle" style="font-size:10px">⠿</span>
+      <input class="comp-name" value="${c.nom||''}" placeholder="Compétence…">
+      <button class="delbtn" style="flex-shrink:0">×</button>
+    </div>
+    <div class="comp-rzone"></div>`;
+
+  el.querySelector('.comp-name').addEventListener('blur',e=>{c.nom=e.target.value.trim();markDirty();});
+  el.querySelector('.delbtn').addEventListener('click',e=>{
+    e.stopPropagation();
+    softDelete(STATE.competences,c,renderComps,'Compétence supprimée');
+  });
+
+  // Zone remarques + media + fichiers + jauge
+  mountRzone(el.querySelector('.comp-rzone'),c.notes,c.media,null,c.files,null,null,c.nom);
+  // Jauge auto-évaluation
+  const gaugeWrap=document.createElement('div');
+  gaugeWrap.style.marginTop='8px';
+  gaugeWrap.appendChild(makeGauge(c,'eval','Auto-évaluation'));
+  el.querySelector('.comp-rzone').appendChild(gaugeWrap);
+
+  return el;
+}
+
+function addComp(){
+  const inp=document.getElementById('compInp'); const val=inp.value.trim(); if(!val) return;
+  if(!STATE.competences) STATE.competences=[];
+  const c={id:'c'+Date.now(),nom:val,eval:0,notes:[],media:[],files:[]};
+  STATE.competences.push(c);
+  const list=document.getElementById('complist');
+  list.appendChild(makeComp(c));
+  inp.value=''; markDirty();
+}
+document.getElementById('compInp')?.addEventListener('keydown',e=>{if(e.key==='Enter')addComp();});
+
 loadAll();
+renderKpis();
 initTheme();
-gdInit();
+// Attendre que Google soit chargé avant d'initialiser Drive
+if(window.google){ gdInit(); }
+else { window.addEventListener('load', ()=>{ setTimeout(gdInit, 500); }); }
+setTimeout(initCollapseAndDrag, 100);
 </script>
 </body>
 </html>

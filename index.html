@@ -370,13 +370,25 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .oinf  { flex:1; }
 .oname { font-size:11px; font-weight:600; color:var(--t1); }
 .orole { font-size:10px; color:var(--t2); }
-.otag  { font-size:7px; font-weight:700; letter-spacing:.5px; padding:2px 5px; border-radius:10px; flex-shrink:0; }
+.otag  { font-size:7px; font-weight:700; letter-spacing:.5px; padding:2px 5px; border-radius:10px; flex-shrink:0; cursor:pointer; position:relative; }
+.otag:hover { opacity:.8; }
+.tag-menu { position:absolute; top:100%; right:0; background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:6px; z-index:999; min-width:130px; box-shadow:0 4px 16px rgba(0,0,0,.5); display:none; flex-direction:column; gap:3px; }
+.tag-menu.open { display:flex; }
+.tag-menu-item { font-size:10px; font-weight:700; padding:4px 8px; border-radius:5px; cursor:pointer; letter-spacing:.5px; }
+.tag-menu-item:hover { background:var(--b1); }
+.tag-menu-custom { display:flex; gap:4px; margin-top:3px; border-top:1px solid var(--b1); padding-top:4px; }
+.tag-menu-custom input { flex:1; background:var(--s3); border:1px solid var(--b2); color:var(--t1); border-radius:4px; padding:3px 6px; font-size:9px; outline:none; }
+.tag-menu-custom button { background:var(--blue); border:none; color:white; border-radius:4px; padding:3px 7px; font-size:9px; cursor:pointer; }
 .tk  { background:rgba(255,255,255,.02); color:var(--t3); }
 .tp  { background:rgba(212,160,32,.08); color:var(--gold); }
 .tbu { background:rgba(212,144,10,.08); color:var(--orn); }
 .to  { background:rgba(66,168,71,.08); color:var(--grn); }
 .tt  { background:rgba(74,139,224,.08); color:var(--blue); }
 .tv  { background:rgba(184,106,240,.08); color:var(--purp); }
+.timg { background:rgba(232,83,58,.08); color:var(--red); }
+.tvid { background:rgba(0,199,183,.08); color:#00C7B7; }
+.tai  { background:rgba(99,102,241,.08); color:#6366f1; }
+.tcustom { background:rgba(255,255,255,.05); color:var(--t2); }
 
 /* ═══ PUBLIC ═══ */
 .pgrid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
@@ -1648,28 +1660,71 @@ function renderOutils(){
   STATE.outils.forEach(ot=>chain.appendChild(makeOutil(ot)));
   makeDraggable(chain,()=>STATE.outils,v=>{STATE.outils=v; renderChain();},renderOutils);
 }
+// Tags disponibles
+const TAG_OPTIONS=[
+  {tag:'PIVOT',      cls:'tp'},
+  {tag:'TRANSVERSAL',cls:'tt'},
+  {tag:'BUGUE',      cls:'tbu'},
+  {tag:'VOCAL',      cls:'tv'},
+  {tag:'IMAGE',      cls:'timg'},
+  {tag:'VIDÉO',      cls:'tvid'},
+  {tag:'IA',         cls:'tai'},
+  {tag:'OK',         cls:'to'},
+  {tag:'DÉCEPTION',  cls:'tk'},
+];
+
+function makeTagMenu(ot, tagEl){
+  document.querySelectorAll('.tag-menu').forEach(m=>m.remove());
+  const menu=document.createElement('div'); menu.className='tag-menu open';
+  TAG_OPTIONS.forEach(opt=>{
+    const item=document.createElement('div'); item.className=`tag-menu-item ${opt.cls}`; item.textContent=opt.tag;
+    item.onclick=e=>{e.stopPropagation();ot.tag=opt.tag;ot.tagcls=opt.cls;tagEl.textContent=opt.tag;tagEl.className=`otag ${opt.cls}`;menu.remove();markDirty();};
+    menu.appendChild(item);
+  });
+  const customRow=document.createElement('div'); customRow.className='tag-menu-custom';
+  const inp=document.createElement('input'); inp.placeholder='Tag personnalisé…'; inp.onclick=e=>e.stopPropagation();
+  const btn=document.createElement('button'); btn.textContent='+';
+  btn.onclick=e=>{e.stopPropagation();const v=inp.value.trim().toUpperCase();if(!v)return;ot.tag=v;ot.tagcls='tcustom';tagEl.textContent=v;tagEl.className='otag tcustom';menu.remove();markDirty();};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
+  customRow.appendChild(inp);customRow.appendChild(btn);menu.appendChild(customRow);
+  tagEl.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',function c(){menu.remove();document.removeEventListener('click',c);}),50);
+}
+
+// Logos auto colorés avec détection d'outils connus
+const TOOL_COLORS={
+  'deepseek':'#4A90D9','deepflow':'#6366f1','seedream':'#E8533A','seedance':'#b86af0',
+  'google':'#4285F4','openai':'#10a37f','mistral':'#f0a500','perplexity':'#20b2aa',
+  'figma':'#F24E1E','notion':'#191919','slack':'#4A154B','discord':'#5865F2',
+  'canva':'#00C4CC','midjourney':'#000000','runway':'#e11d48','sora':'#0ea5e9',
+  'agent':'#6366f1','claude':'#E8533A','gemini':'#4285F4','elevenlabs':'#b86af0',
+  'github':'#333','netlify':'#00C7B7','flow':'#4f9eff','codex':'#10a37f',
+};
+function makeAutoSvg(name){
+  const key=Object.keys(TOOL_COLORS).find(k=>name.toLowerCase().includes(k));
+  const colors=['#E8533A','#4f9eff','#b86af0','#47CF73','#f0a500','#00C7B7','#6366f1','#f43f5e','#06b6d4','#84cc16'];
+  const color=key?TOOL_COLORS[key]:colors[name.charCodeAt(0)%colors.length];
+  const initials=name.trim().split(/\s+/).map(w=>w[0]?.toUpperCase()||'').join('').substring(0,2)||'?';
+  return `<div class="ologo-auto" style="background:${color}">${initials}</div>`;
+}
+
 function makeOutil(ot){
   const wrap=document.createElement('div');wrap.className=`owrap ${ot.cls}`;wrap.dataset.id=ot.id;
   const row=document.createElement('div');row.className='orow';
-  const logoHtml = ot.svgKey ? svg(ot.svgKey) : makeAutoSvg(ot.name);
-  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${logoHtml}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
+  const logoHtml=ot.svgKey?svg(ot.svgKey):makeAutoSvg(ot.name);
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${logoHtml}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}" title="Cliquer pour changer le tag">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(ot,'difficulty'));
   mountRzone(wrap,ot.notes,ot.media,ot.prompts,ot.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'),ot.name);
+  const tagEl=row.querySelector('.otag');
+  tagEl.addEventListener('click',e=>{e.stopPropagation();makeTagMenu(ot,tagEl);});
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.outils,ot,()=>{renderOutils();renderChain();},'Outil supprimé');};
-  row.onclick=e=>{if(e.target.closest('.rbtn,.pbtn,.delbtn'))return;wrap.classList.toggle('sel');};
+  row.onclick=e=>{if(e.target.closest('.rbtn,.pbtn,.delbtn,.otag,.tag-menu'))return;wrap.classList.toggle('sel');};
   return wrap;
-}
-function makeAutoSvg(name){
-  const colors=['#E8533A','#4f9eff','#b86af0','#47CF73','#f0a500','#00C7B7','#6366f1'];
-  const initials=name.trim().split(/\s+/).map(w=>w[0]?.toUpperCase()||'').join('').substring(0,2)||'?';
-  const color=colors[name.charCodeAt(0)%colors.length];
-  return `<div class="ologo-auto" style="background:${color}">${initials}</div>`;
 }
 function addOutil(){
   const val=document.getElementById('oinp').value.trim();if(!val)return;
-  const ot={id:uid(),cls:'ook',svgKey:null,name:val,role:'Ajouté manuellement',tag:'CUSTOM',tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]};
+  const ot={id:uid(),cls:'ook',svgKey:null,name:val,role:'Ajouté manuellement',tag:'OK',tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[]};
   STATE.outils.push(ot);
-  // Re-render les DEUX vues synchronisées
   renderOutils();
   renderChain();
   document.getElementById('oinp').value='';

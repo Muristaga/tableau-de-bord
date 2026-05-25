@@ -370,15 +370,15 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .oinf  { flex:1; }
 .oname { font-size:11px; font-weight:600; color:var(--t1); }
 .orole { font-size:10px; color:var(--t2); }
-.otag  { font-size:7px; font-weight:700; letter-spacing:.5px; padding:2px 5px; border-radius:10px; flex-shrink:0; cursor:pointer; position:relative; }
+.otag  { font-size:7px; font-weight:700; letter-spacing:.5px; padding:2px 5px; border-radius:10px; flex-shrink:0; cursor:pointer; position:relative; user-select:none; }
 .otag:hover { opacity:.8; }
-.tag-menu { position:absolute; top:100%; right:0; background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:6px; z-index:999; min-width:130px; box-shadow:0 4px 16px rgba(0,0,0,.5); display:none; flex-direction:column; gap:3px; }
+.tag-menu { position:fixed; background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:6px; z-index:9999; min-width:140px; box-shadow:0 6px 24px rgba(0,0,0,.7); display:none; flex-direction:column; gap:3px; }
 .tag-menu.open { display:flex; }
-.tag-menu-item { font-size:10px; font-weight:700; padding:4px 8px; border-radius:5px; cursor:pointer; letter-spacing:.5px; }
-.tag-menu-item:hover { background:var(--b1); }
-.tag-menu-custom { display:flex; gap:4px; margin-top:3px; border-top:1px solid var(--b1); padding-top:4px; }
-.tag-menu-custom input { flex:1; background:var(--s3); border:1px solid var(--b2); color:var(--t1); border-radius:4px; padding:3px 6px; font-size:9px; outline:none; }
-.tag-menu-custom button { background:var(--blue); border:none; color:white; border-radius:4px; padding:3px 7px; font-size:9px; cursor:pointer; }
+.tag-menu-item { font-size:10px; font-weight:700; padding:5px 10px; border-radius:5px; cursor:pointer; letter-spacing:.5px; }
+.tag-menu-item:hover { background:var(--b2); }
+.tag-menu-custom { display:flex; gap:4px; margin-top:4px; border-top:1px solid var(--b2); padding-top:4px; }
+.tag-menu-custom input { flex:1; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:4px; padding:4px 7px; font-size:10px; outline:none; }
+.tag-menu-custom button { background:var(--blue); border:none; color:white; border-radius:4px; padding:4px 8px; font-size:10px; cursor:pointer; font-weight:700; }
 .tk  { background:rgba(255,255,255,.02); color:var(--t3); }
 .tp  { background:rgba(212,160,32,.08); color:var(--gold); }
 .tbu { background:rgba(212,144,10,.08); color:var(--orn); }
@@ -517,6 +517,27 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 
 .chstep.dragging { opacity:.4; transform:scale(.95); }
 .chstep.drag-over-chain { border:2px dashed var(--blue) !important; }
+
+/* ═══ QUESTIONNAIRE RÉFLEXIF ═══ */
+.q-section-title { font-family:'Syne',sans-serif; font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); margin-bottom:10px; padding-bottom:4px; border-bottom:1px solid var(--b1); margin-top:16px; }
+.q-section-title:first-child { margin-top:0; }
+.q-item { display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:var(--s2); border-radius:8px; border-left:2px solid var(--b2); margin-bottom:8px; }
+.q-item:focus-within { border-left-color:var(--blue); }
+.q-label { font-size:11px; color:var(--t1); font-weight:600; line-height:1.5; }
+.q-sublabel { font-size:10px; color:var(--t3); font-style:italic; margin-top:-2px; }
+.q-input { background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:6px; padding:8px 10px; font-size:11px; resize:vertical; min-height:60px; outline:none; font-family:inherit; line-height:1.6; width:100%; box-sizing:border-box; }
+.q-input:focus { border-color:var(--blue); }
+.q-scale { display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
+.q-scale-btn { background:var(--s1); border:1px solid var(--b2); color:var(--t3); border-radius:5px; padding:4px 10px; font-size:10px; cursor:pointer; transition:all .15s; }
+.q-scale-btn.selected { background:var(--blue); border-color:var(--blue); color:white; font-weight:700; }
+.q-bloom { display:flex; gap:5px; flex-wrap:wrap; margin-top:2px; }
+.q-bloom-btn { background:var(--s1); border:1px solid var(--b2); color:var(--t3); border-radius:5px; padding:4px 9px; font-size:9px; cursor:pointer; transition:all .15s; font-weight:600; }
+.q-bloom-btn[data-level="1"].selected { background:rgba(66,168,71,.15); border-color:var(--grn); color:var(--grn); }
+.q-bloom-btn[data-level="2"].selected { background:rgba(74,139,224,.15); border-color:var(--blue); color:var(--blue); }
+.q-bloom-btn[data-level="3"].selected { background:rgba(212,160,32,.15); border-color:var(--gold); color:var(--gold); }
+.q-bloom-btn[data-level="4"].selected { background:rgba(212,144,10,.15); border-color:var(--orn); color:var(--orn); }
+.q-bloom-btn[data-level="5"].selected { background:rgba(184,106,240,.15); border-color:var(--purp); color:var(--purp); }
+.q-bloom-btn[data-level="6"].selected { background:rgba(232,83,58,.15); border-color:var(--red); color:var(--red); }
 
 /* ═══ COMPÉTENCES ═══ */
 .comp-item { background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:12px 14px; position:relative; }
@@ -947,6 +968,27 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     </div>
   </div>
 
+  <!-- QUESTIONNAIRE RÉFLEXIF — Pleine largeur -->
+  <div class="full-row" style="margin-top:8px">
+    <div class="card draggable-card" id="card-questionnaire" data-col="left">
+      <div class="ctitle collapsible" data-target="card-questionnaire">
+        <span class="card-drag-handle">⠿</span>
+        🧠 Questionnaire réflexif — Expertise IP & IA
+        <span class="ctitle-collapse">▼</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size:10px;color:var(--t3);margin-bottom:14px;padding:8px 12px;background:var(--s2);border-radius:6px;border-left:2px solid var(--blue)">
+          Ce questionnaire est ton terrain de recherche. Tes réponses alimentent directement le compte rendu et constituent la matière brute de ton mémoire. Sois précise, honnête, et n'hésite pas à nuancer. L'IA analyse ensuite ton expertise IP développée pendant ce stage.
+        </div>
+        <div id="questionnaire-list" style="display:flex;flex-direction:column;gap:18px"></div>
+        <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="sbtn pri" onclick="saveQuestionnaire()" style="font-size:11px">💾 Sauvegarder mes réponses</button>
+          <button class="sbtn" style="border-color:rgba(184,106,240,.4);color:#b86af0;font-size:11px" onclick="genCompteRendu()">📖 Générer le compte rendu avec mes réponses</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <footer>
@@ -1045,7 +1087,7 @@ const INIT_MEM=[
 let STATE={
   livrables:[], outils:[], diffs:[], nns:[], memoire:[],
   chNotes:{}, chMedia:{}, chPrompts:{}, chFiles:{},
-  phases:{}, globals:[], notes:[], competences:[],
+  phases:{}, globals:[], notes:[], competences:[], questionnaire:{},
   autoeval:{livrer:0,apprendre:0,convaincre:0},
   savedAt:null
 };
@@ -1067,14 +1109,40 @@ function markDirty(){
   isDirty=true;
   document.getElementById('sdot').classList.add('dirty');
   document.getElementById('sstatus').textContent='Modifications non sauvegardées';
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(saveAll,4000);
+  // Sauvegarde localStorage IMMÉDIATE — protection maximale
+  try{
+    const phases={};
+    document.querySelectorAll('.phase').forEach(p=>{phases[p.dataset.ph]=p.classList.contains('done')?'done':p.classList.contains('active')?'active':'todo';});
+    STATE.phases=phases;
+    STATE.kpis=getKpisData();
+    localStorage.setItem(SK,JSON.stringify(STATE));
+    // Sauvegarde Drive différée (3s) pour ne pas surcharger l'API
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>{
+      saveAll();
+      if(gdToken) gdSave();
+    },3000);
+  } catch(e){
+    // Si localStorage plein — sauvegarde Drive immédiate
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>{ if(gdToken) gdSave(); },1000);
+    toast('⚠️ localStorage plein — sauvegarde Drive uniquement','var(--orn)');
+  }
 }
 function markClean(){
   isDirty=false;
   document.getElementById('sdot').classList.remove('dirty');
-  document.getElementById('sstatus').textContent='Tout est sauvegardé';
+  document.getElementById('sstatus').textContent='✓ Tout est sauvegardé';
 }
+
+// Protection contre fermeture accidentelle
+window.addEventListener('beforeunload', e=>{
+  if(isDirty){
+    // Tenter une sauvegarde d'urgence localStorage
+    try{ localStorage.setItem(SK+'_backup', localStorage.getItem(SK)||''); } catch(err){}
+    e.preventDefault(); e.returnValue='';
+  }
+});
 
 /* ══ SYSTÈME D'ANNULATION UNIVERSEL ══ */
 let _undoStack = []; // {label, restore: fn}
@@ -1149,54 +1217,79 @@ function softDelete(arr, item, renderFn, msg){
 
 /* ══ KPIs ÉDITABLES ══ */
 const DEFAULT_KPIS = [
-  {val:'6',   lbl:'Semaines pour livrer', fixed:false},
-  {val:'1',   lbl:'Personne sur la mission', fixed:false},
-  {val:'0€',  lbl:'Budget outils e-learning', fixed:false},
-  {val:'11',  lbl:'Outils dans la chaîne', id:'kpi-outils', fixed:true},
+  {val:'6',   lbl:'Semaines pour livrer',     fixed:false, notes:[], media:[], files:[]},
+  {val:'1',   lbl:'Personne sur la mission',  fixed:false, notes:[], media:[], files:[]},
+  {val:'0€',  lbl:'Budget outils e-learning', fixed:false, notes:[], media:[], files:[]},
+  {val:'11',  lbl:'Outils dans la chaîne',    id:'kpi-outils', fixed:true, notes:[], media:[], files:[]},
 ];
 
 function getKpisData(){
   const krow = document.getElementById('krow'); if(!krow) return null;
   return [...krow.querySelectorAll('.kpi')].map(k=>({
-    val: k.querySelector('.kn').textContent.trim(),
-    lbl: k.querySelector('.kl').textContent.trim(),
-    id:  k.querySelector('.kn').id || null,
-    fixed: k.dataset.fixed === 'true'
+    val:   k.querySelector('.kn').textContent.trim(),
+    lbl:   k.querySelector('.kl').textContent.trim(),
+    id:    k.querySelector('.kn').id || null,
+    fixed: k.dataset.fixed === 'true',
+    notes: k._kpiNotes || [],
+    media: k._kpiMedia || [],
+    files: k._kpiFiles || [],
   }));
 }
 
 function renderKpis(){
   const krow = document.getElementById('krow'); if(!krow) return;
-  const data = STATE.kpis || DEFAULT_KPIS;
+  const data = (STATE.kpis && STATE.kpis.length) ? STATE.kpis : JSON.parse(JSON.stringify(DEFAULT_KPIS));
+  // S'assurer que chaque KPI a notes/media/files
+  data.forEach(k=>{ if(!k.notes)k.notes=[]; if(!k.media)k.media=[]; if(!k.files)k.files=[]; });
   krow.innerHTML = '';
+
   data.forEach(k=>{
     const el = document.createElement('div');
     el.className = 'kpi';
     el.dataset.fixed = k.fixed ? 'true' : 'false';
-    el.title = 'Cliquer pour modifier';
+    // Stocker les refs sur l'élément DOM pour getKpisData
+    el._kpiNotes = k.notes; el._kpiMedia = k.media; el._kpiFiles = k.files;
+
     const kn = document.createElement('div'); kn.className='kn'; kn.textContent=k.val;
     if(k.id) kn.id = k.id;
     const kl = document.createElement('div'); kl.className='kl'; kl.textContent=k.lbl;
-    el.appendChild(kn); el.appendChild(kl);
+
+    // Bouton remarques — toggle comme les autres blocs
+    const rbtn = document.createElement('button');
+    rbtn.className = `rbtn ${k.notes.length||k.media.length||k.files.length?'has':''}`;
+    rbtn.style.cssText='position:absolute;top:6px;right:6px;font-size:10px;padding:2px 5px;';
+    rbtn.textContent='📝';
+    rbtn.title='Remarques, captures, fichiers (Ctrl+V pour coller)';
+
+    // Zone remarques montée une seule fois
+    const rzone = document.createElement('div');
+    rzone.style.cssText='margin-top:8px;border-top:1px solid var(--b1);padding-top:8px;';
+    mountRzone(rzone, k.notes, k.media, null, k.files, rbtn, null, k.lbl);
+
+    el.style.position='relative';
+    el.appendChild(kn); el.appendChild(kl); el.appendChild(rbtn); el.appendChild(rzone);
     krow.appendChild(el);
 
-    // Double-clic pour éditer (sauf KPI auto-calculé)
     if(!k.fixed){
-      el.addEventListener('dblclick', ()=>{
-        el.classList.add('kpi-editing');
-        kn.contentEditable='true'; kl.contentEditable='true';
-        kn.focus();
+      kn.style.cursor='text'; kn.title='Cliquer pour modifier';
+      kn.addEventListener('click', e=>{
+        e.stopPropagation();
+        el.classList.add('kpi-editing'); kn.contentEditable='true'; kn.focus();
+        const range=document.createRange();range.selectNodeContents(kn);
+        const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
       });
-      const stopEdit = ()=>{
-        kn.contentEditable='false'; kl.contentEditable='false';
-        el.classList.remove('kpi-editing');
-        STATE.kpis = getKpisData();
-        markDirty();
-      };
-      kn.addEventListener('blur', stopEdit);
-      kl.addEventListener('blur', stopEdit);
-      kn.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); kl.focus(); } });
-      kl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); stopEdit(); } });
+      kn.addEventListener('blur', ()=>{ kn.contentEditable='false'; el.classList.remove('kpi-editing'); STATE.kpis=getKpisData(); markDirty(); });
+      kn.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();kn.blur();kl.focus();} if(e.key==='Escape'){e.preventDefault();kn.blur();} });
+
+      kl.style.cursor='text'; kl.title='Cliquer pour modifier';
+      kl.addEventListener('click', e=>{
+        e.stopPropagation();
+        el.classList.add('kpi-editing'); kl.contentEditable='true'; kl.focus();
+        const range=document.createRange();range.selectNodeContents(kl);
+        const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+      });
+      kl.addEventListener('blur', ()=>{ kl.contentEditable='false'; el.classList.remove('kpi-editing'); STATE.kpis=getKpisData(); markDirty(); });
+      kl.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();kl.blur();} if(e.key==='Escape'){e.preventDefault();kl.blur();} });
     }
   });
 }
@@ -1237,6 +1330,7 @@ function loadAll(){
       STATE.phases   =d.phases   ||{};
       STATE.autoeval =d.autoeval ||{livrer:0,apprendre:0,convaincre:0};
       STATE.publicCible=d.publicCible||JSON.parse(JSON.stringify(INIT_PC_DATA));
+      STATE.questionnaire=d.questionnaire||{};
       compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
       if(d.savedAt){const dt=new Date(d.savedAt);document.getElementById('fdate').textContent='Sauvegardé le '+dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+' à '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
       if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
@@ -1430,11 +1524,30 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
   zone.querySelector('.rsubmit').addEventListener('click',subNote);
   zone.querySelector('.rtarea').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();subNote();}});
 
-  // Médias
+  // Médias — upload + coller (Ctrl+V)
   renderMedia(zone.querySelector('.media-grid'),mediaRef);
   const [imgInp,vidInp]=zone.querySelectorAll('.media-upload-btn input');
   imgInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>compress(f,data=>{mediaRef.push({id:uid(),type:'image',data,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();if(gdToken&&rubriqueName)uploadImageToDrive(data,rubriqueName);}));e.target.value='';});
   vidInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=ev=>{mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();};r.readAsDataURL(f);});e.target.value='';});
+
+  // Coller image depuis le presse-papier (Ctrl+V)
+  zone.addEventListener('paste',e=>{
+    const items=[...(e.clipboardData||e.originalEvent?.clipboardData||{items:[]}).items];
+    const imgItem=items.find(it=>it.type.startsWith('image'));
+    if(!imgItem) return;
+    e.preventDefault();
+    // Basculer sur l'onglet Captures
+    const mediaTab=zone.querySelector('[data-tab="media"]');
+    if(mediaTab&&!mediaTab.classList.contains('active')) mediaTab.click();
+    const f=imgItem.getAsFile();
+    compress(f,data=>{
+      mediaRef.push({id:uid(),type:'image',data,name:'capture-'+now()+'.png',date:now()});
+      renderMedia(zone.querySelector('.media-grid'),mediaRef);
+      markDirty();
+      if(gdToken&&rubriqueName) uploadImageToDrive(data,rubriqueName);
+      toast('📸 Capture collée');
+    });
+  });;
 
   // Fichiers
   if(hf){
@@ -1676,19 +1789,31 @@ const TAG_OPTIONS=[
 function makeTagMenu(ot, tagEl){
   document.querySelectorAll('.tag-menu').forEach(m=>m.remove());
   const menu=document.createElement('div'); menu.className='tag-menu open';
+
   TAG_OPTIONS.forEach(opt=>{
     const item=document.createElement('div'); item.className=`tag-menu-item ${opt.cls}`; item.textContent=opt.tag;
     item.onclick=e=>{e.stopPropagation();ot.tag=opt.tag;ot.tagcls=opt.cls;tagEl.textContent=opt.tag;tagEl.className=`otag ${opt.cls}`;menu.remove();markDirty();};
     menu.appendChild(item);
   });
+
   const customRow=document.createElement('div'); customRow.className='tag-menu-custom';
   const inp=document.createElement('input'); inp.placeholder='Tag personnalisé…'; inp.onclick=e=>e.stopPropagation();
   const btn=document.createElement('button'); btn.textContent='+';
   btn.onclick=e=>{e.stopPropagation();const v=inp.value.trim().toUpperCase();if(!v)return;ot.tag=v;ot.tagcls='tcustom';tagEl.textContent=v;tagEl.className='otag tcustom';menu.remove();markDirty();};
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
   customRow.appendChild(inp);customRow.appendChild(btn);menu.appendChild(customRow);
-  tagEl.appendChild(menu);
-  setTimeout(()=>document.addEventListener('click',function c(){menu.remove();document.removeEventListener('click',c);}),50);
+
+  // Positionner avec fixed au bon endroit
+  document.body.appendChild(menu);
+  const rect = tagEl.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.style.left = Math.max(4, rect.right - menu.offsetWidth) + 'px';
+
+  setTimeout(()=>{
+    document.addEventListener('click', function c(e){
+      if(!menu.contains(e.target)){ menu.remove(); document.removeEventListener('click',c); }
+    });
+  }, 50);
 }
 
 // Logos auto colorés avec détection d'outils connus
@@ -1833,7 +1958,7 @@ function initTheme(){if(localStorage.getItem('kb_theme')==='light'){document.bod
    RENDER ALL + INIT
 ══════════════════════════════════ */
 function renderAll(){
-  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC(); renderNotesList(); renderComps(); renderKpis();
+  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC(); renderNotesList(); renderComps(); renderKpis(); renderQuestionnaire();
   if(!STATE.autoeval)STATE.autoeval={livrer:0,apprendre:0,convaincre:0};
   [{id:'g-livrer',k:'livrer'},{id:'g-apprendre',k:'apprendre'},{id:'g-convaincre',k:'convaincre'}].forEach(({id,k})=>{
     const el=document.getElementById(id);if(el){el.innerHTML='';el.appendChild(makeGauge(STATE.autoeval,k,'Avancement'));}
@@ -1873,29 +1998,360 @@ function addPC(){
 }
 
 /* ══ COMPTE RENDU ══ */
+/* ══════════════════════════════════
+   QUESTIONNAIRE RÉFLEXIF
+══════════════════════════════════ */
+const QUESTIONS = [
+  // SECTION 1 — AVANT / APRÈS
+  { section:'🔍 Avant / Après — Cartographie de ta progression', id:'q_avant_ip', type:'textarea',
+    label:'Avant ce stage, quelle était ta représentation du métier d\'ingénieure pédagogique ?',
+    sublabel:'Décris ce que tu pensais que c\'était. Tes attentes, tes représentations initiales.' },
+  { id:'q_apres_ip', type:'textarea',
+    label:'Après ce stage, comment définis-tu maintenant le métier d\'IP ?',
+    sublabel:'Qu\'est-ce qui a changé dans ta compréhension du métier ?' },
+  { id:'q_ecart', type:'textarea',
+    label:'Quel est le plus grand écart entre ce que tu imaginais faire et ce que tu as réellement fait ?',
+    sublabel:'Sois précise. Cet écart est une donnée de recherche, pas une erreur.' },
+
+  // SECTION 2 — RÔLE DE L'IA
+  { section:'🤖 Le rôle exact de l\'IA dans ton parcours', id:'q_ia_tuteur', type:'textarea',
+    label:'Cite 3 moments où l\'IA t\'a fonctionné comme un TUTEUR — elle t\'a guidée vers une compréhension que tu as ensuite intégrée toi-même.',
+    sublabel:'Ex: "Quand Claude m\'a expliqué la taxonomie de Bloom, j\'ai compris que..."' },
+  { id:'q_ia_executant', type:'textarea',
+    label:'Cite 3 moments où l\'IA a fonctionné comme un EXÉCUTANT — elle a produit quelque chose que tu n\'aurais pas su faire seule, sans que tu aies appris à le faire.',
+    sublabel:'Ex: "Le code HTML, je l\'aurais été incapable de l\'écrire sans Claude..."' },
+  { id:'q_ia_bequille', type:'textarea',
+    label:'Y a-t-il des moments où tu as l\'impression d\'avoir utilisé l\'IA comme une béquille — pour éviter de chercher toi-même ?',
+    sublabel:'Honnêteté totale requise. C\'est la question centrale de ta problématique.' },
+  { id:'q_sans_ia', type:'textarea',
+    label:'Si tu refaisais ce stage sans IA — qu\'est-ce qui aurait été impossible ? Qu\'est-ce qui aurait simplement pris plus de temps ?',
+    sublabel:'Distingue les deux catégories soigneusement.' },
+
+  // SECTION 3 — TAXONOMIE DE BLOOM
+  { section:'📊 Niveau de tes apprentissages — Taxonomie de Bloom', id:'q_bloom_global', type:'bloom',
+    label:'À quel niveau de la taxonomie de Bloom situes-tu tes apprentissages IP GLOBALEMENT ?',
+    sublabel:'1=Mémoriser · 2=Comprendre · 3=Appliquer · 4=Analyser · 5=Évaluer · 6=Créer' },
+  { id:'q_bloom_details', type:'textarea',
+    label:'Justifie ton niveau de Bloom. Qu\'est-ce qui te permet de dire que tu as COMPRIS les principes IP, pas seulement EXÉCUTÉ des procédures ?',
+    sublabel:'Donne des exemples concrets tirés de ta chaîne de fabrication.' },
+  { id:'q_refaire', type:'scale',
+    label:'Si on te demandait de concevoir une NOUVELLE formation e-learning dans 6 mois, avec des outils différents — te sentirais-tu capable de le faire ?',
+    sublabel:'1=Pas du tout · 5=Tout à fait', options:['1','2','3','4','5'] },
+  { id:'q_refaire_detail', type:'textarea',
+    label:'Qu\'est-ce que tu ferais différemment si tu recommençais cette mission aujourd\'hui ?',
+    sublabel:'Ce que tu changerais montre ce que tu as appris.' },
+
+  // SECTION 4 — COMPÉTENCES IP DÉVELOPPÉES
+  { section:'🎓 Compétences IP développées — Le Boterf', id:'q_competences_mobilisees', type:'textarea',
+    label:'Selon Le Boterf, la compétence c\'est mobiliser des ressources en situation. Quelles ressources as-tu mobilisées qui étaient TIENNES (pas celles de l\'IA) ?',
+    sublabel:'Ex: ton jugement pédagogique, ta capacité à formuler des objectifs, ton sens de la vulgarisation...' },
+  { id:'q_decision', type:'textarea',
+    label:'Décris une décision pédagogique difficile que tu as prise SEULE — sans demander à l\'IA.',
+    sublabel:'Pourquoi cette décision ? Sur quoi te basais-tu ?' },
+  { id:'q_erreur', type:'textarea',
+    label:'Quelle erreur pédagogique as-tu faite ? Comment l\'as-tu identifiée et corrigée ?',
+    sublabel:'L\'erreur analysée est une trace d\'apprentissage professionnel.' },
+  { id:'q_transfert', type:'textarea',
+    label:'Quelles compétences développées pendant ce stage seraient utilisables dans un autre contexte professionnel, sans IA ?',
+    sublabel:'C\'est la question de la transférabilité — centrale pour le mémoire.' },
+
+  // SECTION 5 — RÉFLEXIVITÉ (SCHÖN)
+  { section:'🪞 Réflexivité professionnelle — Schön', id:'q_ruptures', type:'textarea',
+    label:'Quand est-ce que ta chaîne d\'outils a "cassé" ? Décris les ruptures majeures.',
+    sublabel:'Ex: quotas épuisés, hallucinations, bugs Canvas... Que s\'est-il passé EN TOI à ce moment ?' },
+  { id:'q_doute', type:'textarea',
+    label:'Tu as mentionné "le doute qui revient quand trop d\'outils plantent". Qu\'est-ce que ce doute dit de toi comme professionnelle ?',
+    sublabel:'Ce doute est une donnée de recherche. Analyse-le.' },
+  { id:'q_autonomie', type:'scale',
+    label:'Sur une échelle de 1 à 5, te considères-tu aujourd\'hui comme une professionnelle AUTONOME en ingénierie pédagogique ?',
+    sublabel:'1=Je ne suis pas encore autonome · 5=Je suis pleinement autonome', options:['1','2','3','4','5'] },
+  { id:'q_autonomie_nuance', type:'textarea',
+    label:'Nuance ta réponse précédente. Autonome sur quoi exactement ? Pas encore autonome sur quoi ?',
+    sublabel:'La nuance est la marque d\'une vraie réflexivité professionnelle.' },
+  { id:'q_schon', type:'textarea',
+    label:'Schön distingue "réflexion dans l\'action" et "réflexion sur l\'action". Donne un exemple de chacune dans ton parcours.',
+    sublabel:'Dans l\'action = pendant que tu faisais. Sur l\'action = en prenant du recul après.' },
+
+  // SECTION 6 — SYNTHÈSE
+  { section:'✍️ Synthèse — Réponse à ta problématique', id:'q_problematique', type:'textarea',
+    label:'Dans quelle mesure le recours autonome à une chaîne d\'outils IA a-t-il compensé l\'absence d\'encadrement professionnel — selon TOI ?',
+    sublabel:'Réponds directement à la problématique de ton mémoire en 5 à 10 lignes.' },
+  { id:'q_professionnalisation', type:'textarea',
+    label:'Cette autonomie a-t-elle produit de vrais apprentissages professionnalisants ou une exécution assistée ? Ou les deux ?',
+    sublabel:'Justifie avec des exemples précis tirés de ta mission.' },
+  { id:'q_recommandation', type:'textarea',
+    label:'Que recommanderais-tu à un autre alternant IP qui voudrait reproduire ce que tu as fait ?',
+    sublabel:'À quelles conditions ça marche ? Ce qui est transférable et ce qui ne l\'est pas.' },
+  { id:'q_mot_fin', type:'textarea',
+    label:'En un paragraphe — qu\'est-ce que ce stage t\'a appris sur toi-même comme professionnelle ?',
+    sublabel:'Ce paragraphe pourra être cité tel quel dans ton mémoire.' },
+];
+
+function renderQuestionnaire(){
+  const list = document.getElementById('questionnaire-list'); if(!list) return;
+  if(!STATE.questionnaire) STATE.questionnaire = {};
+  list.innerHTML = '';
+  let currentSection = null;
+
+  QUESTIONS.forEach(q=>{
+    if(q.section){
+      const sec = document.createElement('div');
+      sec.className = 'q-section-title';
+      sec.textContent = q.section;
+      list.appendChild(sec);
+      currentSection = q.section;
+    }
+    if(!q.id) return;
+
+    const item = document.createElement('div');
+    item.className = 'q-item';
+
+    const label = document.createElement('div');
+    label.className = 'q-label';
+    label.textContent = q.label;
+    item.appendChild(label);
+
+    if(q.sublabel){
+      const sub = document.createElement('div');
+      sub.className = 'q-sublabel';
+      sub.textContent = q.sublabel;
+      item.appendChild(sub);
+    }
+
+    if(q.type === 'textarea'){
+      const inp = document.createElement('textarea');
+      inp.className = 'q-input';
+      inp.rows = 4;
+      inp.placeholder = 'Ta réponse…';
+      inp.value = STATE.questionnaire[q.id] || '';
+      inp.addEventListener('input', ()=>{ STATE.questionnaire[q.id] = inp.value; markDirty(); });
+      item.appendChild(inp);
+
+    } else if(q.type === 'scale'){
+      const scale = document.createElement('div');
+      scale.className = 'q-scale';
+      (q.options||['1','2','3','4','5']).forEach(opt=>{
+        const btn = document.createElement('button');
+        btn.className = 'q-scale-btn' + (STATE.questionnaire[q.id]===opt ? ' selected' : '');
+        btn.textContent = opt;
+        btn.onclick = ()=>{
+          STATE.questionnaire[q.id] = opt;
+          scale.querySelectorAll('.q-scale-btn').forEach(b=>b.classList.remove('selected'));
+          btn.classList.add('selected');
+          markDirty();
+        };
+        scale.appendChild(btn);
+      });
+      item.appendChild(scale);
+
+    } else if(q.type === 'bloom'){
+      const bloom = document.createElement('div');
+      bloom.className = 'q-bloom';
+      [
+        {level:'1', label:'1 — Mémoriser'},
+        {level:'2', label:'2 — Comprendre'},
+        {level:'3', label:'3 — Appliquer'},
+        {level:'4', label:'4 — Analyser'},
+        {level:'5', label:'5 — Évaluer'},
+        {level:'6', label:'6 — Créer'},
+      ].forEach(opt=>{
+        const btn = document.createElement('button');
+        btn.className = 'q-bloom-btn' + (STATE.questionnaire[q.id]===opt.level ? ' selected' : '');
+        btn.dataset.level = opt.level;
+        btn.textContent = opt.label;
+        btn.onclick = ()=>{
+          STATE.questionnaire[q.id] = opt.level;
+          bloom.querySelectorAll('.q-bloom-btn').forEach(b=>b.classList.remove('selected'));
+          btn.classList.add('selected');
+          markDirty();
+        };
+        bloom.appendChild(btn);
+      });
+      item.appendChild(bloom);
+    }
+
+    list.appendChild(item);
+  });
+}
+
+function saveQuestionnaire(){
+  saveAll();
+  toast('💾 Réponses sauvegardées');
+}
+
 let _crText='';
 function buildCRPrompt(){
-  const lv=STATE.livrables.map(l=>`- ${l.name} (${l.status==='done'?'Fait':l.status==='cours'?'En cours':'À faire'}): ${l.det}`).join('\n');
-  const ot=STATE.outils.map(o=>`- ${o.name} [${o.tag}]: ${o.role}`).join('\n');
-  const df=STATE.diffs.map(d=>`- ${d.title}: ${d.sub}`).join('\n');
-  const nn=STATE.nns.map(n=>`- ${n.txt}`).join('\n');
-  const ae=STATE.autoeval||{};
-  const pc=(STATE.publicCible||INIT_PC_DATA).map(p=>`- ${p.titre}: ${p.texte}`).join('\n');
-  return `Tu es directeur de mémoire de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum (start-up, budget zéro, 6 semaines, seule). Rédige un compte rendu narratif structuré en étapes qui raconte l'histoire complète de sa mission. Ton professionnel mais vivant, avec des titres clairs.\n\nLIVRABLES:\n${lv}\n\nOUTILS:\n${ot}\n\nDIFFICULTÉS:\n${df}\n\nNON-NÉGOCIABLES:\n${nn}\n\nPUBLIC CIBLE:\n${pc}\n\nAUTO-ÉVALUATION:\n- Livrer: ${ae.livrer||0}/10\n- Apprendre IP: ${ae.apprendre||0}/10\n- Convaincre tutrice: ${ae.convaincre||0}/10`;
+  const lv = STATE.livrables.map(l=>`- ${l.name} [${l.status==='done'?'✓ Fait':l.status==='cours'?'⏳ En cours':'⬜ À faire'}] : ${l.det}${l.notes&&l.notes.length?' | Notes: '+l.notes.map(n=>n.text).join(' / '):''}`).join('\n');
+  const ot = STATE.outils.map(o=>`- ${o.name} [${o.tag}] : ${o.role}`).join('\n');
+  const df = STATE.diffs.map(d=>`- ${d.title} : ${d.sub}${d.notes&&d.notes.length?' | '+d.notes.map(n=>n.text).join(' / '):''}`).join('\n');
+  const nn = STATE.nns.map(n=>`- ${n.txt}`).join('\n');
+  const ae = STATE.autoeval||{};
+  const pc = (STATE.publicCible||[]).map(p=>`- ${p.titre} : ${p.texte}`).join('\n');
+  const comp = (STATE.competences||[]).map(c=>`- ${c.nom} (auto-éval: ${c.eval}/10)`).join('\n');
+  const notes = (STATE.notes||[]).map(n=>n.text).join('\n');
+  const globals = (STATE.globals||[]).map(g=>g.text).join('\n');
+  const mem = (STATE.memoire||[]).filter(r=>r.text).map(r=>`[${r.title}] ${r.text}`).join('\n');
+  const q = STATE.questionnaire||{};
+
+  const problematique = `Dans quelle mesure le recours autonome à une chaîne d'outils IA peut-il compenser l'absence d'encadrement professionnel en ingénierie pédagogique — et à quelles conditions cette autonomie produit-elle des apprentissages professionnalisants plutôt qu'une simple exécution assistée ?`;
+
+  return `Tu es le directeur de mémoire de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum (start-up, budget zéro, 6 semaines, seule). Tu dois rédiger un COMPTE RENDU PROFESSIONNEL ET ANALYTIQUE structuré qui constitue la matière principale de son mémoire de Master PIF & Médias Numériques.
+
+PROBLÉMATIQUE DU MÉMOIRE :
+${problematique}
+
+CADRE THÉORIQUE À MOBILISER (retour de Mme Longuet, directrice de mémoire) :
+- Compétence professionnelle selon Guy Le Boterf : la compétence = mobiliser des ressources en situation
+- Apprentissage en situation de travail : apprentissage par l'erreur, l'itération, l'ajustement permanent
+- Réflexivité professionnelle selon Donald Schön : praticien réflexif, réflexion dans/sur l'action
+- Taxonomie de Bloom : 6 niveaux (mémoriser → comprendre → appliquer → analyser → évaluer → créer)
+
+STRUCTURE DU COMPTE RENDU (4 temps demandés par la directrice) :
+1. Ancrage théorique — contextualiser la mission dans les cadres conceptuels
+2. Collecte de données — décrire le terrain (la chaîne de fabrication, les ruptures, les traces numériques)
+3. Analyse — cartographie des ruptures, analyse des apprentissages, rôle de l'IA (tuteur vs exécutant)
+4. Retour réflexif et préconisations — répondre à la problématique, limites, transférabilité
+
+---
+DONNÉES DU TABLEAU DE BORD (terrain de recherche de Karima) :
+
+LIVRABLES PRODUITS :
+${lv||'(non renseigné)'}
+
+CHAÎNE D'OUTILS IA UTILISÉE :
+${ot||'(non renseigné)'}
+
+DIFFICULTÉS / RUPTURES RENCONTRÉES :
+${df||'(non renseigné)'}
+
+NON-NÉGOCIABLES PÉDAGOGIQUES :
+${nn||'(non renseigné)'}
+
+PUBLIC CIBLE :
+${pc||'(non renseigné)'}
+
+COMPÉTENCES IP DÉVELOPPÉES :
+${comp||'(non renseigné)'}
+
+NOTES DE TERRAIN :
+${notes||'(aucune)'}
+
+OBSERVATIONS GÉNÉRALES :
+${globals||'(aucune)'}
+
+NOTES MÉMOIRE :
+${mem||'(aucune)'}
+
+AUTO-ÉVALUATION :
+- Livrer la formation : ${ae.livrer||0}/10
+- Apprendre le métier IP : ${ae.apprendre||0}/10
+- Convaincre la tutrice : ${ae.convaincre||0}/10
+
+---
+RÉPONSES AU QUESTIONNAIRE RÉFLEXIF (données qualitatives primaires) :
+
+AVANT/APRÈS :
+Représentation initiale du métier IP : ${q.q_avant_ip||'(non renseigné)'}
+Définition après stage : ${q.q_apres_ip||'(non renseigné)'}
+Écart imaginé/réel : ${q.q_ecart||'(non renseigné)'}
+
+RÔLE DE L'IA :
+IA comme tuteur (moments d'apprentissage réel) : ${q.q_ia_tuteur||'(non renseigné)'}
+IA comme exécutant (production sans apprentissage) : ${q.q_ia_executant||'(non renseigné)'}
+IA comme béquille (évitement de l'effort) : ${q.q_ia_bequille||'(non renseigné)'}
+Sans IA — impossible vs plus long : ${q.q_sans_ia||'(non renseigné)'}
+
+TAXONOMIE DE BLOOM :
+Niveau global auto-évalué : ${q.q_bloom_global?'Niveau '+q.q_bloom_global+'/6':'(non renseigné)'}
+Justification du niveau : ${q.q_bloom_details||'(non renseigné)'}
+Capable de refaire dans un autre contexte : ${q.q_refaire?q.q_refaire+'/5':'(non renseigné)'}
+Ce que je ferais différemment : ${q.q_refaire_detail||'(non renseigné)'}
+
+COMPÉTENCES IP — LE BOTERF :
+Ressources personnelles mobilisées : ${q.q_competences_mobilisees||'(non renseigné)'}
+Décision pédagogique prise seule : ${q.q_decision||'(non renseigné)'}
+Erreur identifiée et corrigée : ${q.q_erreur||'(non renseigné)'}
+Compétences transférables sans IA : ${q.q_transfert||'(non renseigné)'}
+
+RÉFLEXIVITÉ — SCHÖN :
+Description des ruptures et vécu intérieur : ${q.q_ruptures||'(non renseigné)'}
+Analyse du doute professionnel : ${q.q_doute||'(non renseigné)'}
+Niveau d'autonomie professionnelle : ${q.q_autonomie?q.q_autonomie+'/5':'(non renseigné)'}
+Nuance sur l'autonomie : ${q.q_autonomie_nuance||'(non renseigné)'}
+Exemples réflexion dans/sur l'action : ${q.q_schon||'(non renseigné)'}
+
+SYNTHÈSE DE KARIMA :
+Réponse à la problématique : ${q.q_problematique||'(non renseigné)'}
+Professionnalisation vs exécution assistée : ${q.q_professionnalisation||'(non renseigné)'}
+Recommandations pour un autre alternant : ${q.q_recommandation||'(non renseigné)'}
+Ce que ce stage m'a appris sur moi : ${q.q_mot_fin||'(non renseigné)'}
+
+---
+INSTRUCTIONS DE RÉDACTION :
+- Rédige un compte rendu professionnel structuré en 4 temps (voir structure ci-dessus)
+- Utilise les données du tableau de bord ET les réponses au questionnaire comme matière première
+- Mobilise les cadres théoriques (Le Boterf, Schön, Bloom) pour analyser, pas juste décrire
+- Sois nuancé sur le rôle de l'IA : ni plaidoyer ni procès, mais analyse rigoureuse
+- Réponds directement à la problématique dans la partie "retour réflexif"
+- Minimum 700 mots. Titres avec ##. Sous-titres avec ###.
+- Ton professionnel, analytique, mais vivant — c'est un mémoire professionnel, pas un rapport technique`;
 }
+
 async function genCompteRendu(){
-  const modal=document.getElementById('crModal'); const body=document.getElementById('crBody');
-  modal.style.display='flex'; body.innerHTML='<div style="text-align:center;padding:40px;color:var(--t2)">⏳ Génération en cours…</div>'; _crText='';
+  const modal=document.getElementById('crModal');
+  const body=document.getElementById('crBody');
+  modal.style.display='flex';
+  body.innerHTML='<div style="text-align:center;padding:40px;color:var(--t2)"><div style="font-size:32px;margin-bottom:12px">⏳</div>Génération en cours…<br><span style="font-size:10px;color:var(--t3)">Cela peut prendre 10 à 20 secondes</span></div>';
+  _crText='';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:buildCRPrompt()}]})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user',content:buildCRPrompt()}]
+      })
+    });
+    if(!r.ok){
+      const err=await r.text();
+      body.innerHTML=`<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ Erreur API (${r.status})<br><span style="font-size:10px">${err.substring(0,200)}</span></div>`;
+      return;
+    }
     const d=await r.json();
-    _crText=d.content?.map(c=>c.text||'').join('')||'Erreur.';
-    const html=_crText.replace(/^## (.+)$/gm,'<h2 style="color:var(--red);font-size:12px;text-transform:uppercase;margin:16px 0 4px">$1</h2>').replace(/^### (.+)$/gm,'<h3 style="color:var(--t1);font-size:11px;margin:10px 0 3px">$1</h3>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-    body.innerHTML=`<div style="font-size:13px;color:var(--t2);line-height:1.8">${html}</div>`;
-  }catch(e){ body.innerHTML='<div style="text-align:center;padding:40px">⚠️ Erreur. Réessaie.</div>'; }
+    if(d.error){
+      body.innerHTML=`<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ ${d.error.message||'Erreur inconnue'}</div>`;
+      return;
+    }
+    _crText=d.content?.map(c=>c.text||'').join('')||'';
+    if(!_crText){
+      body.innerHTML='<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ Réponse vide. Vérifie ta connexion Drive et réessaie.</div>';
+      return;
+    }
+    const html=_crText
+      .replace(/^## (.+)$/gm,'<h2 style="color:var(--red);font-size:12px;text-transform:uppercase;margin:20px 0 6px;font-family:Syne,sans-serif;letter-spacing:1px">$1</h2>')
+      .replace(/^### (.+)$/gm,'<h3 style="color:var(--t1);font-size:11px;font-weight:700;margin:14px 0 4px">$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--t1)">$1</strong>')
+      .replace(/^- (.+)$/gm,'<div style="padding-left:12px;margin:2px 0">• $1</div>')
+      .replace(/\n\n/g,'<br><br>')
+      .replace(/\n/g,'<br>');
+    body.innerHTML=`<div style="font-size:12px;color:var(--t2);line-height:1.9;padding:4px 0">${html}</div>`;
+  }catch(e){
+    body.innerHTML=`<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ Erreur réseau : ${e.message||'Vérifie ta connexion'}</div>`;
+  }
 }
-function copyCR(){ navigator.clipboard.writeText(_crText).then(()=>toast('📋 Copié !')); }
-function dlCR(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([_crText],{type:'text/plain'})); a.download='compte-rendu-karima.txt'; a.click(); }
+function copyCR(){
+  if(!_crText){toast('⚠️ Génère d\'abord le compte rendu','var(--orn)');return;}
+  navigator.clipboard.writeText(_crText).then(()=>toast('📋 Copié !'));
+}
+function dlCR(){
+  if(!_crText){toast('⚠️ Génère d\'abord le compte rendu','var(--orn)');return;}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([_crText],{type:'text/plain;charset=utf-8'}));
+  a.download='compte-rendu-mission-karima.txt';
+  a.click();
+  toast('⬇️ Téléchargé');
+}
 
 /* ══ NOTES ══ */
 function renderNotesList(){
@@ -2129,6 +2585,7 @@ document.getElementById('compInp')?.addEventListener('keydown',e=>{if(e.key==='E
 
 loadAll();
 renderKpis();
+renderQuestionnaire();
 initTheme();
 // Attendre que Google soit chargé avant d'initialiser Drive
 if(window.google){ gdInit(); }

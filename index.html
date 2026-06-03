@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -369,6 +370,7 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .oinf  { flex:1; }
 .oname { font-size:11px; font-weight:600; color:var(--t1); }
 .orole { font-size:10px; color:var(--t2); }
+.oacte { font-size:10px; color:var(--t3); font-style:italic; margin-top:4px; line-height:1.5; border-left:2px solid var(--b2); padding-left:6px; }
 .otag  { font-size:7px; font-weight:700; letter-spacing:.5px; padding:2px 5px; border-radius:10px; flex-shrink:0; cursor:pointer; position:relative; user-select:none; }
 .otag:hover { opacity:.8; }
 .tag-menu { position:fixed; background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:6px; z-index:9999; min-width:140px; box-shadow:0 6px 24px rgba(0,0,0,.7); display:none; flex-direction:column; gap:3px; }
@@ -516,6 +518,37 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 
 .chstep.dragging { opacity:.4; transform:scale(.95); }
 .chstep.drag-over-chain { border:2px dashed var(--blue) !important; }
+
+/* ═══ MODAL REFORMULATION ═══ */
+.reform-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:10001; align-items:center; justify-content:center; padding:20px; }
+.reform-modal.open { display:flex; }
+.reform-box { background:var(--s1); border:1px solid var(--b2); border-radius:12px; width:100%; max-width:640px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; }
+.reform-head { padding:14px 18px; border-bottom:1px solid var(--b1); display:flex; align-items:center; justify-content:space-between; }
+.reform-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--t1); }
+.reform-body { padding:16px 18px; display:flex; flex-direction:column; gap:10px; flex:1; overflow-y:auto; }
+.reform-label { font-size:10px; color:var(--t3); font-family:'Syne',sans-serif; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+.reform-ta { background:var(--s2); border:1px solid var(--b2); color:var(--t1); border-radius:7px; padding:10px 12px; font-size:12px; resize:vertical; min-height:80px; outline:none; font-family:inherit; line-height:1.6; width:100%; box-sizing:border-box; }
+.reform-ta:focus { border-color:var(--blue); }
+.reform-result { background:var(--s2); border:1px solid var(--b2); border-left:3px solid var(--purp); border-radius:7px; padding:12px; font-size:12px; color:var(--t1); line-height:1.7; min-height:60px; }
+.reform-foot { padding:12px 18px; border-top:1px solid var(--b1); display:flex; gap:8px; justify-content:flex-end; }
+.reform-tone { display:flex; gap:6px; flex-wrap:wrap; }
+.reform-tone-btn { background:var(--s2); border:1px solid var(--b2); color:var(--t3); border-radius:5px; padding:4px 10px; font-size:10px; cursor:pointer; transition:all .15s; font-weight:600; }
+.reform-tone-btn.active { background:rgba(184,106,240,.15); border-color:var(--purp); color:var(--purp); }
+
+/* ═══ AUTOCORRECTION ═══ */
+.spellcheck-highlight { text-decoration:underline wavy var(--orn); cursor:pointer; }
+/* ═══ AJOUT BLOCS PERSONNALISÉS ═══ */
+.add-bloc-btn { background:transparent; border:1px dashed var(--b2); color:var(--t3); border-radius:8px; padding:8px 20px; font-size:11px; cursor:pointer; transition:all .2s; width:100%; }
+.add-bloc-btn:hover { border-color:var(--blue); color:var(--blue); background:rgba(74,139,224,.04); }
+.custom-item { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; background:var(--s2); border-radius:6px; border-left:2px solid var(--b2); }
+.custom-item-text { flex:1; font-size:11px; color:var(--t1); line-height:1.5; min-width:20px; outline:none; }
+.custom-item-del { background:transparent; border:none; color:var(--t3); cursor:pointer; font-size:13px; padding:0 2px; flex-shrink:0; }
+.custom-item-del:hover { color:var(--red); }
+
+.editable { cursor:text; border-radius:3px; transition:background .15s; }
+.editable:hover { background:rgba(255,255,255,.04); outline:1px dashed rgba(255,255,255,.1); }
+.editable:focus { outline:1px solid var(--blue); background:var(--s2); padding:1px 3px; }
+[contenteditable="true"] { cursor:text; outline:1px solid var(--blue) !important; background:var(--s2) !important; border-radius:3px; padding:1px 4px; min-width:20px; }
 
 /* ═══ QUESTIONNAIRE RÉFLEXIF ═══ */
 .q-section-title { font-family:'Syne',sans-serif; font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); margin-bottom:10px; padding-bottom:4px; border-bottom:1px solid var(--b1); margin-top:16px; }
@@ -704,15 +737,49 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
   <div class="sbtns">
     <button class="sbtn" style="border-color:rgba(66,168,71,.3);color:var(--grn)" id="gdBtn" onclick="gdConnect()">☁️ Drive</button>
     <button class="sbtn" onclick="gdLoad()">☁️ Charger Drive</button>
+    <button class="sbtn" onclick="openDriveFolder()" title="Ouvrir le dossier de sauvegarde sur Drive" style="border-color:rgba(66,168,71,.2);color:var(--t2)">📂 Voir sur Drive</button>
+    <button class="sbtn" id="autocorrectToggle" onclick="toggleAutocorrect()" title="Autocorrection automatique" style="border-color:rgba(66,168,71,.3);color:var(--grn)">✅ Auto-correct</button>
     <button class="sbtn pri"  onclick="exportData()">⬇️ Exporter JSON</button>
     <button class="sbtn pri"  onclick="document.getElementById('impFile').click()">⬆️ Importer JSON</button>
     <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(event)">
     <button class="sbtn dan"  onclick="dlAllMedia()">🖼️ Captures</button>
     <button class="sbtn"      onclick="saveAll()">💾 Sauvegarder</button>
     <button class="sbtn" style="border-color:rgba(184,106,240,.4);color:#b86af0" onclick="genCompteRendu()">📖 Compte rendu</button>
+    <button class="sbtn" style="border-color:rgba(184,106,240,.3);color:#b86af0" onclick="openReformModal()" title="Reformulation académique (Ctrl+Shift+R)">✍️ Reformuler</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
   </div>
 </div>
+<!-- MODAL REFORMULATION ACADÉMIQUE -->
+<div class="reform-modal" id="reformModal">
+  <div class="reform-box">
+    <div class="reform-head">
+      <span class="reform-title">✍️ Reformulation académique</span>
+      <button onclick="document.getElementById('reformModal').classList.remove('open')" style="background:transparent;border:none;color:var(--t3);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="reform-body">
+      <div class="reform-label">Ton texte</div>
+      <textarea class="reform-ta" id="reformInput" rows="4" placeholder="Colle ou écris ton texte ici…"></textarea>
+      <div class="reform-label">Style de reformulation</div>
+      <div class="reform-tone">
+        <button class="reform-tone-btn active" data-tone="academique">Académique</button>
+        <button class="reform-tone-btn" data-tone="master">Master professionnel</button>
+        <button class="reform-tone-btn" data-tone="reflexif">Réflexif (Schön)</button>
+        <button class="reform-tone-btn" data-tone="leboterf">Compétences (Le Boterf)</button>
+        <button class="reform-tone-btn" data-tone="synthetique">Synthétique</button>
+      </div>
+      <div id="reformResult" style="display:none">
+        <div class="reform-label" style="margin-top:4px">Résultat</div>
+        <div class="reform-result" id="reformResultText"></div>
+      </div>
+    </div>
+    <div class="reform-foot">
+      <button class="sbtn" onclick="document.getElementById('reformModal').classList.remove('open')">Fermer</button>
+      <button class="sbtn pri" onclick="copyReform()">📋 Copier</button>
+      <button class="sbtn" style="background:var(--purp);border:none;color:white" onclick="doReform()">✍️ Reformuler</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- MODAL COMPTE RENDU -->
@@ -988,6 +1055,16 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     </div>
   </div>
 
+  <!-- BOUTONS AJOUT DE BLOCS -->
+  <div class="two-cols" style="margin-top:4px">
+    <div style="display:flex;justify-content:center">
+      <button class="add-bloc-btn" onclick="addCustomBloc('left')">＋ Ajouter un bloc — Colonne gauche</button>
+    </div>
+    <div style="display:flex;justify-content:center">
+      <button class="add-bloc-btn" onclick="addCustomBloc('right')">＋ Ajouter un bloc — Colonne droite</button>
+    </div>
+  </div>
+
 </main>
 
 <footer>
@@ -1044,17 +1121,28 @@ const INIT_LV=[
   {id:'l8',name:'Évaluation certifiante',        det:'Quiz + grille d\'évaluation des compétences',                  status:'todo', difficulty:0,notes:[],media:[],prompts:[],files:[]},
 ];
 const INIT_OT=[
-  {id:'o1',cls:'odec',svgKey:'gemini',    name:'Gemini',              role:'Premier essai — trop abstrait, abandonné',                  tag:'DÉCEPTION',   tagcls:'tk', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o2',cls:'opiv',svgKey:'claude',    name:'Claude',              role:'Cerveau — contenu, scénario, objectifs, quiz',              tag:'PIVOT',       tagcls:'tp', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'oW',cls:'opiv',svgKey:'webinaire', name:'Webinaire Studer.ia', role:'Pivot — découverte Claude',                                 tag:'PIVOT',       tagcls:'tp', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'oF',cls:'otr', svgKey:'flow',      name:'Flow',                role:'Dictée vocale universelle — Ctrl+Win, compatible partout',  tag:'TRANSVERSAL', tagcls:'tt', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o3',cls:'obug',svgKey:'canvas',    name:'Gemini Canvas',       role:'Code interactif — hallucinations fréquentes',               tag:'BUGUE',       tagcls:'tbu',difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'oE',cls:'ovoc',svgKey:'elevenlabs',name:'ElevenLabs',          role:'Voix synthétique → fichier audio → intégré dans le HTML',  tag:'VOCAL',       tagcls:'tv', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o4',cls:'ook', svgKey:'livehtml',  name:'LiveHTML / CodePen',  role:'Visualisation du code avant retouche',                      tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o5',cls:'ook', svgKey:'codex',     name:'Codex',               role:'Affinage, correction, optimisation',                        tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o6',cls:'ook', svgKey:'github',    name:'GitHub',              role:'Stockage versions + pont déploiement',                      tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o7',cls:'ook', svgKey:'netlify',   name:'Netlify',             role:'Déploiement URL publique',                                  tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
-  {id:'o8',cls:'ook', svgKey:'classroom', name:'Google Classroom',    role:'LMS de substitution — budget zéro',                         tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[]},
+  {id:'o1',cls:'odec',svgKey:'gemini',    name:'Gemini',              role:'Premier essai — trop abstrait, abandonné',                  tag:'DÉCEPTION',   tagcls:'tk', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 1 — Le faux départ. Je commence avec Gemini. Je lui demande de m'aider à concevoir la formation. Les réponses sont trop abstraites, trop génériques. Aucune structure pédagogique réelle. J'abandonne après quelques échanges."},
+  {id:'oW',cls:'opiv',svgKey:'webinaire', name:'Webinaire Studer.ia', role:'Pivot — découverte Claude',                                 tag:'PIVOT',       tagcls:'tp', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 2 — Le tournant. Je participe au webinaire Studer.ia. C'est là que je découvre Claude et les possibilités réelles de l'IA en ingénierie pédagogique. Tout change à partir de ce moment."},
+  {id:'o2',cls:'opiv',svgKey:'claude',    name:'Claude',              role:'Cerveau — contenu, scénario, objectifs, quiz',              tag:'PIVOT',       tagcls:'tp', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 3 — Le binôme. Je lui demande de m'interviewer. Il génère le doc « About Me ». Désormais, à chaque conversation, il sait qui je suis. Il devient mon co-concepteur : matrice pédagogique, objectifs Bloom, scénarios, quiz. Mon tuteur de remplacement."},
+  {id:'oF',cls:'otr', svgKey:'flow',      name:'Flow',                role:'Dictée vocale universelle — Ctrl+Win, compatible partout',  tag:'TRANSVERSAL', tagcls:'tt', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte transversal — La voix. Ctrl+Win, dictée vocale universelle. Je parle, Flow transcrit. Je l'utilise partout : dans Claude, dans mes notes, dans mes documents. Il transforme ma pensée orale en texte structuré."},
+  {id:'o3',cls:'obug',svgKey:'canvas',    name:'Gemini Canvas',       role:'Code interactif — hallucinations fréquentes',               tag:'BUGUE',       tagcls:'tbu',difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 4 — L'imposteur. Je tente Gemini Canvas pour le code interactif. Il annonce « succès » — rien ne s'affiche. Les hallucinations sont fréquentes. Je reformule, je recommence. Je finis par l'abandonner."},
+  {id:'oE',cls:'ovoc',svgKey:'elevenlabs',name:'ElevenLabs',          role:'Voix synthétique → fichier audio → intégré dans le HTML',  tag:'VOCAL',       tagcls:'tv', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 5 — La voix de la formation. Je génère les voix synthétiques avec ElevenLabs. Le fichier audio est exporté puis intégré dans le HTML. C'est ce qui donne vie aux contenus e-learning."},
+  {id:'o4',cls:'ook', svgKey:'livehtml',  name:'LiveHTML / CodePen',  role:'Visualisation du code avant retouche',                      tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 6 — Le filet. Canvas n'ouvre pas toujours ses propres fichiers. LiveHTML et CodePen me permettent de visualiser le code en temps réel avant d'y toucher. Je vois le résultat, je repère les bugs avant de les corriger."},
+  {id:'o5',cls:'ook', svgKey:'codex',     name:'Codex',               role:'Affinage, correction, optimisation',                        tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 7 — Le correcteur. Codex affine, corrige et optimise le code produit. C'est l'outil qui transforme un prototype brut en module propre et fonctionnel."},
+  {id:'o6',cls:'ook', svgKey:'github',    name:'GitHub',              role:'Stockage versions + pont déploiement',                      tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 8 — La mémoire. GitHub stocke toutes les versions du code. C'est aussi le pont entre développement et déploiement : chaque commit déclenche une mise à jour automatique sur Netlify."},
+  {id:'o7',cls:'ook', svgKey:'netlify',   name:'Netlify',             role:'Déploiement URL publique',                                  tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 9 — La vitrine. Netlify transforme le code en URL publique accessible par tous. Chaque module déployé peut être testé, partagé, intégré dans le LMS. Budget : zéro."},
+  {id:'o8',cls:'ook', svgKey:'classroom', name:'Google Classroom',    role:'LMS de substitution — budget zéro',                         tag:'OK',          tagcls:'to', difficulty:0,notes:[],media:[],prompts:[],files:[],
+    acte:"Acte 10 — Le LMS de substitution. Sans budget pour un vrai LMS, Google Classroom devient la plateforme d'accueil. Les modules Netlify sont intégrés comme liens. Solution pragmatique, zéro coût."},
 ];
 const INIT_DF=[
   {id:'d1',ico:'🧍',title:'Solitude décisionnelle',  sub:'Personne pour valider au fil de l\'eau — doute permanent',                  notes:[],media:[],files:[]},
@@ -1086,7 +1174,7 @@ const INIT_MEM=[
 let STATE={
   livrables:[], outils:[], diffs:[], nns:[], memoire:[],
   chNotes:{}, chMedia:{}, chPrompts:{}, chFiles:{},
-  phases:{}, globals:[], notes:[], competences:[], questionnaire:{},
+  phases:{}, globals:[], notes:[], competences:[], questionnaire:{}, customBlocs:[],
   autoeval:{livrer:0,apprendre:0,convaincre:0},
   savedAt:null
 };
@@ -1099,7 +1187,7 @@ const SK='kb_v10';
 function now(){const d=new Date();return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
 function uid(){return '_'+Math.random().toString(36).slice(2,9);}
 function svg(key){return `<span class="ologo">${SVGS[key]||''}</span>`;}
-function compat(arr){arr.forEach(x=>{if(!x.media)x.media=[];if(!x.prompts)x.prompts=[];if(!x.files)x.files=[];if(x.difficulty===undefined)x.difficulty=0;});}
+function compat(arr){arr.forEach(x=>{if(!x.media)x.media=[];if(!x.prompts)x.prompts=[];if(!x.files)x.files=[];if(x.difficulty===undefined)x.difficulty=0;if(x.acte===undefined)x.acte='';});}
 
 /* ══════════════════════════════════
    SAUVEGARDE
@@ -1330,6 +1418,7 @@ function loadAll(){
       STATE.autoeval =d.autoeval ||{livrer:0,apprendre:0,convaincre:0};
       STATE.publicCible=d.publicCible||JSON.parse(JSON.stringify(INIT_PC_DATA));
       STATE.questionnaire=d.questionnaire||{};
+      STATE.customBlocs=d.customBlocs||[];
       compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
       if(d.savedAt){const dt=new Date(d.savedAt);document.getElementById('fdate').textContent='Sauvegardé le '+dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+' à '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
       if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
@@ -1581,7 +1670,11 @@ function renderNotes(el,ref,btn){
   ref.forEach(n=>{
     const cfg=TCFG[n.type]||TCFG.ti,d=document.createElement('div');d.className=`rentry ${n.type}`;
     d.innerHTML=`<div class="rmeta"><span class="rdate">${n.date}</span><span class="rtag ${cfg.cls}">${cfg.lbl}</span></div><span class="rtxt">${n.text.replace(/\n/g,'<br>')}</span><button class="rdel">×</button>`;
-    d.querySelector('.rdel').onclick=()=>{ref.splice(ref.indexOf(n),1);renderNotes(el,ref,btn);if(btn&&!ref.length)btn.classList.remove('has');markDirty();};
+    makeEditable(d.querySelector('.rtxt'), ()=>n.text, v=>{ n.text=v; });
+    d.querySelector('.rdel').onclick=()=>{
+      softDelete(ref, n, ()=>renderNotes(el,ref,btn), 'Remarque supprimée');
+      if(btn&&!ref.length)btn.classList.remove('has');
+    };
     el.appendChild(d);
   });
 }
@@ -1600,16 +1693,171 @@ function renderPrompts(el,ref,btn){
   if(!el)return;el.innerHTML='';
   ref.forEach(p=>{
     const d=document.createElement('div');d.className='prompt-entry';
-    d.innerHTML=`<div class="prompt-title">${p.title}</div><div class="prompt-body">${p.text}</div><div class="prompt-meta">${p.date}</div><button class="prompt-copy">📋</button><button class="prompt-del">×</button>`;
-    d.querySelector('.prompt-del').onclick=()=>{ref.splice(ref.indexOf(p),1);renderPrompts(el,ref,btn);if(btn&&!ref.length)btn.classList.remove('has');markDirty();};
+    d.innerHTML=`<div class="prompt-title">${p.title}</div><div class="prompt-body">${p.text}</div><div class="prompt-meta">${p.date}</div><button class="prompt-copy" title="Copier">📋</button><button class="prompt-del" title="Supprimer">×</button>`;
+    makeEditable(d.querySelector('.prompt-title'), ()=>p.title, v=>{ p.title=v; });
+    makeEditable(d.querySelector('.prompt-body'),  ()=>p.text,  v=>{ p.text=v;  });
+    d.querySelector('.prompt-del').onclick=()=>{
+      softDelete(ref, p, ()=>renderPrompts(el,ref,btn), 'Prompt supprimé');
+      if(btn&&!ref.length)btn.classList.remove('has');
+    };
     d.querySelector('.prompt-copy').onclick=e=>{e.stopPropagation();navigator.clipboard.writeText(p.text).then(()=>toast('📋 Prompt copié'));};
     el.appendChild(d);
   });
 }
 
 /* ══════════════════════════════════
-   DRAG & DROP
+   BLOCS PERSONNALISÉS
 ══════════════════════════════════ */
+function addCustomBloc(col){
+  // Demander le titre du bloc
+  const titre = prompt('Titre du nouveau bloc :');
+  if(!titre || !titre.trim()) return;
+
+  // Créer l'objet bloc
+  const bloc = {
+    id: 'custom-'+uid(),
+    titre: titre.trim(),
+    emoji: '📋',
+    items: [],
+    col: col
+  };
+
+  if(!STATE.customBlocs) STATE.customBlocs = [];
+  STATE.customBlocs.push(bloc);
+  markDirty();
+
+  // Rendre le bloc
+  renderCustomBloc(bloc, col);
+}
+
+function renderCustomBloc(bloc, col){
+  const colEl = document.getElementById('col-'+col);
+  if(!colEl) return;
+
+  // Supprimer si déjà rendu
+  const existing = document.getElementById(bloc.id);
+  if(existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.className = 'card draggable-card';
+  card.id = bloc.id;
+  card.dataset.col = col;
+
+  card.innerHTML = `
+    <div class="ctitle collapsible" data-target="${bloc.id}">
+      <span class="card-drag-handle">⠿</span>
+      <span class="custom-bloc-emoji editable" title="Double-clic pour changer l'emoji">${bloc.emoji}</span>
+      <span class="custom-bloc-titre editable" style="flex:1">${bloc.titre}</span>
+      <button class="delbtn" onclick="deleteCustomBloc('${bloc.id}',event)" style="margin-left:auto;font-size:11px">×</button>
+      <span class="ctitle-collapse">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="custom-items-list" id="items-${bloc.id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <div class="addrow">
+        <input class="addinp" placeholder="Ajouter un élément…" id="inp-${bloc.id}">
+        <button class="addbtn" onclick="addCustomItem('${bloc.id}')">+ Ajouter</button>
+      </div>
+    </div>`;
+
+  colEl.appendChild(card);
+
+  // Editable titre et emoji
+  const titreEl = card.querySelector('.custom-bloc-titre');
+  const emojiEl = card.querySelector('.custom-bloc-emoji');
+  makeEditable(titreEl, ()=>bloc.titre, v=>{ bloc.titre=v; markDirty(); });
+  makeEditable(emojiEl, ()=>bloc.emoji, v=>{ bloc.emoji=v; markDirty(); });
+
+  // Enter pour ajouter
+  card.querySelector(`#inp-${bloc.id}`).addEventListener('keydown', e=>{
+    if(e.key==='Enter') addCustomItem(bloc.id);
+  });
+
+  // Rendre les items existants
+  renderCustomItems(bloc);
+
+  // Activer collapse et drag
+  setTimeout(()=>{
+    const ct = card.querySelector('.ctitle.collapsible');
+    if(ct){
+      ct.addEventListener('click', e=>{
+        if(e.target.closest('.card-drag-handle,.delbtn,.editable')) return;
+        card.classList.toggle('collapsed');
+      });
+    }
+    // Activer drag
+    const handle = card.querySelector('.card-drag-handle');
+    if(handle){
+      handle.addEventListener('mousedown', e=>{
+        e.stopPropagation();
+        card.setAttribute('draggable','true');
+      });
+      card.addEventListener('dragstart', e=>{
+        window._dragCard = card;
+        setTimeout(()=>card.classList.add('dragging-card'),0);
+        e.dataTransfer.effectAllowed='move';
+      });
+      card.addEventListener('dragend', ()=>{
+        card.classList.remove('dragging-card');
+        card.setAttribute('draggable','false');
+        document.querySelectorAll('.drag-over-card').forEach(c=>c.classList.remove('drag-over-card'));
+        window._dragCard = null;
+        saveCardOrder();
+      });
+      card.addEventListener('dragover', e=>{ e.preventDefault(); if(card!==window._dragCard) card.classList.add('drag-over-card'); });
+      card.addEventListener('dragleave', ()=>card.classList.remove('drag-over-card'));
+      card.addEventListener('drop', e=>{
+        e.preventDefault(); e.stopPropagation();
+        card.classList.remove('drag-over-card');
+        if(window._dragCard && window._dragCard!==card) card.parentNode.insertBefore(window._dragCard, card);
+      });
+    }
+  }, 50);
+}
+
+function renderCustomItems(bloc){
+  const list = document.getElementById('items-'+bloc.id);
+  if(!list) return;
+  list.innerHTML = '';
+  bloc.items.forEach(item=>{
+    const el = document.createElement('div');
+    el.className = 'custom-item';
+    el.innerHTML = `<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text" contenteditable="false">${item.text}</span><button class="custom-item-del">×</button>`;
+    makeEditable(el.querySelector('.custom-item-text'), ()=>item.text, v=>{ item.text=v; markDirty(); });
+    el.querySelector('.custom-item-del').onclick = ()=>{
+      softDelete(bloc.items, item, ()=>renderCustomItems(bloc), 'Élément supprimé');
+    };
+    list.appendChild(el);
+  });
+  makeDraggable(list, ()=>bloc.items, v=>{ bloc.items=v; }, ()=>renderCustomItems(bloc));
+}
+
+function addCustomItem(blocId){
+  const bloc = (STATE.customBlocs||[]).find(b=>b.id===blocId);
+  if(!bloc) return;
+  const inp = document.getElementById('inp-'+blocId);
+  const val = inp ? inp.value.trim() : '';
+  if(!val) return;
+  if(!bloc.items) bloc.items = [];
+  bloc.items.push({id:uid(), text:val});
+  inp.value = '';
+  renderCustomItems(bloc);
+  markDirty();
+}
+
+function deleteCustomBloc(blocId, e){
+  e && e.stopPropagation();
+  const bloc = (STATE.customBlocs||[]).find(b=>b.id===blocId);
+  if(!bloc) return;
+  softDelete(STATE.customBlocs, bloc, ()=>{
+    const el = document.getElementById(blocId);
+    if(el) el.remove();
+  }, `Bloc "${bloc.titre}" supprimé`);
+}
+
+function renderAllCustomBlocs(){
+  if(!STATE.customBlocs || !STATE.customBlocs.length) return;
+  STATE.customBlocs.forEach(bloc=>renderCustomBloc(bloc, bloc.col||'left'));
+}
 function makeDraggable(container, getItems, setItems, renderFn){
   let dragEl=null, dragIdx=null;
 
@@ -1696,12 +1944,51 @@ function renderLivrables(){
   STATE.livrables.forEach(lv=>list.appendChild(makeLivrable(lv)));
   makeDraggable(list,()=>STATE.livrables,v=>{STATE.livrables=v;},renderLivrables);
 }
+/* ══════════════════════════════════
+   ÉDITION INLINE UNIVERSELLE
+   Double-clic → modifier le texte
+══════════════════════════════════ */
+function makeEditable(el, getValue, setValue){
+  el.classList.add('editable');
+  el.title = (el.title||'') + ' (double-clic pour modifier)';
+  el.addEventListener('dblclick', e=>{
+    e.stopPropagation();
+    el.contentEditable = 'true';
+    el.focus();
+    // Sélectionner tout le texte
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+  el.addEventListener('blur', ()=>{
+    if(el.contentEditable !== 'true') return;
+    el.contentEditable = 'false';
+    const newVal = el.textContent.trim();
+    if(newVal !== getValue()) {
+      setValue(newVal);
+      markDirty();
+    }
+  });
+  el.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); el.blur(); }
+    if(e.key === 'Escape'){ el.textContent = getValue(); el.blur(); }
+  });
+  el.addEventListener('click', e=>{ if(el.contentEditable==='true') e.stopPropagation(); });
+}
+
+/* ══════════════════════════════════
+   LIVRABLES
+══════════════════════════════════ */
 function makeLivrable(lv){
   const wrap=document.createElement('li');wrap.className=SWW[lv.status];wrap.dataset.id=lv.id;
   const row=document.createElement('div');row.className='lvrow';
   row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><div class="lvchk">${SCC[lv.status]}</div><div class="lvbody"><div class="lvname">${lv.name}</div><div class="lvdet">${lv.det}</div></div><span class="lvbadge ${SBB[lv.status]}">${SLL[lv.status]}</span><div class="lvacts"><button class="rbtn ${lv.notes&&lv.notes.length?'has':''}" title="Remarques">📝</button><button class="pbtn ${lv.prompts&&lv.prompts.length?'has':''}" title="Prompts">🎯</button><button class="delbtn">×</button></div>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(lv,'difficulty'));
   mountRzone(wrap,lv.notes,lv.media,lv.prompts,lv.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'),lv.name);
+  makeEditable(row.querySelector('.lvname'), ()=>lv.name, v=>{ lv.name=v; });
+  makeEditable(row.querySelector('.lvdet'),  ()=>lv.det,  v=>{ lv.det=v;  });
   row.querySelector('.lvchk').onclick=e=>{e.stopPropagation();lv.status=SCY[lv.status];wrap.className=SWW[lv.status];row.querySelector('.lvchk').textContent=SCC[lv.status];row.querySelector('.lvbadge').textContent=SLL[lv.status];row.querySelector('.lvbadge').className='lvbadge '+SBB[lv.status];markDirty();};
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.livrables,lv,renderLivrables,'Livrable supprimé');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.pbtn,.delbtn,.lvchk'))return;wrap.classList.toggle('sel');};
@@ -1728,7 +2015,7 @@ function renderChain(){
     // Clic → détail (uniquement pour outils avec CHAIN_DATA)
     step.onclick=(e)=>{
       if(e.target.closest('.charr')) return;
-      const key = Object.keys(CHAIN_DATA).find(k=>CHAIN_DATA[k].lbl===ot.name);
+      const key = Object.keys(CHAIN_DATA).find(k=>CHAIN_DATA[k].lbl===ot.name || CHAIN_DATA[k].lbl===ot.name.replace(/ \/ /g,'/') || CHAIN_DATA[k].svgKey===ot.svgKey);
       if(key) toggleChain(key,step);
     };
 
@@ -1836,9 +2123,12 @@ function makeOutil(ot){
   const wrap=document.createElement('div');wrap.className=`owrap ${ot.cls}`;wrap.dataset.id=ot.id;
   const row=document.createElement('div');row.className='orow';
   const logoHtml=ot.svgKey?svg(ot.svgKey):makeAutoSvg(ot.name);
-  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${logoHtml}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div></div><span class="otag ${ot.tagcls}" title="Cliquer pour changer le tag">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span>${logoHtml}<div class="oinf"><div class="oname">${ot.name}</div><div class="orole">${ot.role}</div>${ot.acte||ot.acte===''?`<div class="oacte">${ot.acte||'<span style="color:var(--t3);font-style:italic">Double-clic pour ajouter le contexte d\'usage…</span>'}</div>`:'<div class="oacte"><span style="color:var(--t3);font-style:italic">Double-clic pour ajouter le contexte d\'usage…</span></div>'}</div><span class="otag ${ot.tagcls}" title="Cliquer pour changer le tag">${ot.tag}</span><button class="rbtn ${ot.notes&&ot.notes.length?'has':''}">📝</button><button class="pbtn ${ot.prompts&&ot.prompts.length?'has':''}">🎯</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);wrap.appendChild(makeGauge(ot,'difficulty'));
   mountRzone(wrap,ot.notes,ot.media,ot.prompts,ot.files,row.querySelector('.rbtn'),row.querySelector('.pbtn'),ot.name);
+  makeEditable(row.querySelector('.oname'), ()=>ot.name, v=>{ ot.name=v; });
+  makeEditable(row.querySelector('.orole'), ()=>ot.role, v=>{ ot.role=v; });
+  makeEditable(row.querySelector('.oacte'), ()=>ot.acte||'', v=>{ ot.acte=v; });
   const tagEl=row.querySelector('.otag');
   tagEl.addEventListener('click',e=>{e.stopPropagation();makeTagMenu(ot,tagEl);});
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.outils,ot,()=>{renderOutils();renderChain();},'Outil supprimé');};
@@ -1870,6 +2160,8 @@ function makeDiff(df){
   row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><span class="dico">${df.ico}</span><div class="dtext"><strong>${df.title}</strong><span>${df.sub}</span></div><button class="rbtn ${df.notes&&df.notes.length?'has':''}">📝</button><button class="delbtn">×</button>`;
   wrap.appendChild(row);
   mountRzone(wrap,df.notes,df.media,null,df.files,row.querySelector('.rbtn'),null,df.title);
+  makeEditable(row.querySelector('.dtext strong'), ()=>df.title, v=>{ df.title=v; });
+  makeEditable(row.querySelector('.dtext span'),   ()=>df.sub,   v=>{ df.sub=v;   });
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.diffs,df,renderDiffs,'Difficulté supprimée');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.delbtn'))return;wrap.classList.toggle('sel');};
   return wrap;
@@ -1891,6 +2183,7 @@ function makeNN(nn){
   row.innerHTML=`<span class="drag-handle" title="Déplacer" style="position:absolute;left:6px;top:10px">⠿</span><span class="nnnum" style="margin-left:14px">${nn.num}</span><span class="nntxt">${nn.txt}</span><button class="rbtn ${nn.notes&&nn.notes.length?'has':''}" style="position:absolute;right:22px;top:8px">📝</button><button class="delbtn" style="position:absolute;right:6px;top:8px">×</button>`;
   wrap.appendChild(row);
   mountRzone(wrap,nn.notes,nn.media,null,nn.files,row.querySelector('.rbtn'),null,nn.txt);
+  makeEditable(row.querySelector('.nntxt'), ()=>nn.txt, v=>{ nn.txt=v; });
   row.querySelector('.delbtn').onclick=e=>{e.stopPropagation();softDelete(STATE.nns,nn,renderNNs,'Non-négociable supprimé');};
   row.onclick=e=>{if(e.target.closest('.rbtn,.delbtn'))return;wrap.classList.toggle('sel');};
   return wrap;
@@ -1912,6 +2205,7 @@ function makeMemRub(r){
   const hdr=document.createElement('div');hdr.className='mem-header';
   hdr.innerHTML=`<span class="mem-icon">${r.icon||'📄'}</span><span class="mem-title">${r.title}</span><span class="mem-toggle">▼</span>${!r.fixed?`<button class="mem-delbtn">×</button>`:''}`;
   wrap.appendChild(hdr);
+  if(!r.fixed) makeEditable(hdr.querySelector('.mem-title'), ()=>r.title, v=>{ r.title=v; });
   const body=document.createElement('div');body.className='mem-body';
   const isBiblio=r.title==='Bibliographie';
   const flist=document.createElement('div');flist.className='file-list';renderFiles(flist,r.files);
@@ -1938,7 +2232,13 @@ document.getElementById('memInp').addEventListener('keydown',e=>{if(e.key==='Ent
    REMARQUES GLOBALES
 ══════════════════════════════════ */
 function renderGlobals(){const list=document.getElementById('glist');if(!STATE.globals.length){list.innerHTML='<div class="gempty">Aucune remarque. Écris ci-dessous ↓</div>';return;}list.innerHTML='';STATE.globals.forEach(g=>list.appendChild(makeGlobal(g)));}
-function makeGlobal(g){const d=document.createElement('div');d.className='gitem';d.innerHTML=`<span class="gdate">${g.date}</span><span class="gbody">${g.text.replace(/\n/g,'<br>')}</span><button class="gdel">×</button>`;d.querySelector('.gdel').onclick=()=>{softDelete(STATE.globals,g,renderGlobals,'Remarque supprimée');};return d;}
+function makeGlobal(g){
+  const d=document.createElement('div');d.className='gitem';
+  d.innerHTML=`<span class="gdate">${g.date}</span><span class="gbody">${g.text.replace(/\n/g,'<br>')}</span><button class="gdel">×</button>`;
+  makeEditable(d.querySelector('.gbody'), ()=>g.text, v=>{ g.text=v; });
+  d.querySelector('.gdel').onclick=()=>{softDelete(STATE.globals,g,renderGlobals,'Remarque supprimée');};
+  return d;
+}
 function addGlobal(){const val=document.getElementById('ginp').value.trim();if(!val)return;STATE.globals.push({id:uid(),text:val,date:now()});renderGlobals();document.getElementById('ginp').value='';markDirty();}
 document.getElementById('ginp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addGlobal();}});
 
@@ -1957,7 +2257,7 @@ function initTheme(){if(localStorage.getItem('kb_theme')==='light'){document.bod
    RENDER ALL + INIT
 ══════════════════════════════════ */
 function renderAll(){
-  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC(); renderNotesList(); renderComps(); renderKpis(); renderQuestionnaire();
+  renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC(); renderNotesList(); renderComps(); renderKpis(); renderQuestionnaire(); renderAllCustomBlocs();
   if(!STATE.autoeval)STATE.autoeval={livrer:0,apprendre:0,convaincre:0};
   [{id:'g-livrer',k:'livrer'},{id:'g-apprendre',k:'apprendre'},{id:'g-convaincre',k:'convaincre'}].forEach(({id,k})=>{
     const el=document.getElementById(id);if(el){el.innerHTML='';el.appendChild(makeGauge(STATE.autoeval,k,'Avancement'));}
@@ -2361,6 +2661,7 @@ function renderNotesList(){
     const d=document.createElement('div'); d.className='gitem';
     d.innerHTML=`<span class="gdate">${n.date}</span><span class="gbody">${n.text.replace(/\n/g,'<br>')}</span><button class="gdel">×</button>`;
     d.querySelector('.gdel').onclick=()=>{softDelete(STATE.notes,n,renderNotesList,'Note supprimée');};
+    makeEditable(d.querySelector('.gbody'), ()=>n.text, v=>{ n.text=v; });
     list.appendChild(d);
   });
 }
@@ -2582,11 +2883,240 @@ function addComp(){
 }
 document.getElementById('compInp')?.addEventListener('keydown',e=>{if(e.key==='Enter')addComp();});
 
+/* ══════════════════════════════════
+   LIEN VERS DRIVE
+══════════════════════════════════ */
+function openDriveFolder(){
+  if(gdFileId){
+    window.open(`https://drive.google.com/file/d/${gdFileId}/view`, '_blank');
+  } else {
+    window.open('https://drive.google.com/drive/appdata', '_blank');
+    toast('📂 Ouverture du dossier Drive…');
+  }
+}
+
+function toggleAutocorrect(){
+  _autocorrectEnabled = !_autocorrectEnabled;
+  const btn = document.getElementById('autocorrectToggle');
+  if(btn){
+    btn.textContent = _autocorrectEnabled ? '✅ Auto-correct' : '⬜ Auto-correct';
+    btn.style.color = _autocorrectEnabled ? 'var(--grn)' : 'var(--t3)';
+    btn.style.borderColor = _autocorrectEnabled ? 'rgba(66,168,71,.3)' : 'var(--b2)';
+  }
+  toast(_autocorrectEnabled ? '✅ Autocorrection activée' : '⬜ Autocorrection désactivée');
+}
+
+/* ══════════════════════════════════
+   AUTOCORRECTION ORTHOGRAPHIQUE
+   Activation sur tous les champs texte
+══════════════════════════════════ */
+/* ══════════════════════════════════
+   AUTOCORRECTION AUTOMATIQUE
+   Correction à la fin de chaque phrase
+══════════════════════════════════ */
+let _autocorrectTimer = null;
+let _autocorrectEnabled = true;
+
+async function autocorrectText(el){
+  const txt = el.value || el.textContent;
+  if(!txt || txt.trim().length < 5) return;
+  try{
+    const r = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        messages:[{role:'user', content:`Corrige uniquement les fautes d'orthographe et de grammaire dans ce texte en français. Ne change pas le style, ne reformule pas, ne modifie pas la ponctuation volontaire. Réponds UNIQUEMENT avec le texte corrigé, sans introduction ni commentaire.\n\nTexte: ${txt}`}]
+      })
+    });
+    const d = await r.json();
+    const corrected = d.content?.map(c=>c.text||'').join('').trim();
+    if(corrected && corrected !== txt.trim()){
+      const cursorPos = el.selectionStart || txt.length;
+      if(el.tagName === 'TEXTAREA' || el.tagName === 'INPUT'){
+        el.value = corrected;
+        // Remettre le curseur à la fin
+        el.setSelectionRange(corrected.length, corrected.length);
+      } else {
+        el.textContent = corrected;
+      }
+      // Déclencher la sauvegarde
+      el.dispatchEvent(new Event('input', {bubbles:true}));
+      toast('✓ Texte corrigé automatiquement');
+    }
+  }catch(e){ /* silencieux */ }
+}
+
+function attachAutocorrect(el){
+  if(el._autocorrectAttached) return;
+  el._autocorrectAttached = true;
+  el.addEventListener('keydown', e=>{
+    if(!_autocorrectEnabled) return;
+    // Corriger à chaque point, point d'exclamation, point d'interrogation ou Entrée
+    if(['.','!','?','\n'].includes(e.key) || (e.key==='Enter' && !e.shiftKey)){
+      clearTimeout(_autocorrectTimer);
+      _autocorrectTimer = setTimeout(()=>autocorrectText(el), 800);
+    }
+  });
+}
+
+function enableSpellcheck(){
+  // Spellcheck natif + autocorrection automatique
+  const selector = 'textarea, .addinp, .gtarea, .mem-ta, .q-input, .reform-ta';
+  document.querySelectorAll(selector).forEach(el=>{
+    el.spellcheck = true;
+    el.lang = 'fr';
+    attachAutocorrect(el);
+  });
+  // Observer les nouveaux éléments
+  const obs = new MutationObserver(mutations=>{
+    mutations.forEach(m=>{
+      m.addedNodes.forEach(node=>{
+        if(node.nodeType!==1) return;
+        node.querySelectorAll && node.querySelectorAll(selector).forEach(el=>{
+          el.spellcheck = true; el.lang = 'fr'; attachAutocorrect(el);
+        });
+        if(node.matches && node.matches(selector)){ node.spellcheck=true; node.lang='fr'; attachAutocorrect(node); }
+      });
+    });
+  });
+  obs.observe(document.body, {childList:true, subtree:true});
+}
+
+/* ══════════════════════════════════
+   BOUTON REFORMULER INLINE
+   Apparaît sur chaque champ actif
+══════════════════════════════════ */
+function addReformBtn(el){
+  if(el._reformBtnAttached) return;
+  el._reformBtnAttached = true;
+
+  // Créer le bouton flottant
+  const btn = document.createElement('button');
+  btn.className = 'reform-inline-btn';
+  btn.textContent = '✍️';
+  btn.title = 'Reformuler ce texte (style académique)';
+  btn.style.cssText = 'display:none;position:absolute;z-index:999;background:var(--s2);border:1px solid var(--purp);color:#b86af0;border-radius:5px;padding:2px 7px;font-size:11px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap;';
+
+  document.body.appendChild(btn);
+
+  btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    btn.style.display='none';
+    const txt = el.value || el.textContent;
+    openReformModal(txt);
+  });
+
+  el.addEventListener('focus', ()=>{
+    const rect = el.getBoundingClientRect();
+    btn.style.top = (window.scrollY + rect.top - 28) + 'px';
+    btn.style.left = (window.scrollX + rect.right - 90) + 'px';
+    btn.style.display = 'block';
+  });
+
+  el.addEventListener('blur', ()=>{
+    setTimeout(()=>{ btn.style.display='none'; }, 200);
+  });
+}
+
+function enableReformBtns(){
+  const selector = 'textarea, .addinp, .gtarea, .mem-ta, .q-input';
+  document.querySelectorAll(selector).forEach(addReformBtn);
+  const obs2 = new MutationObserver(mutations=>{
+    mutations.forEach(m=>{
+      m.addedNodes.forEach(node=>{
+        if(node.nodeType!==1) return;
+        node.querySelectorAll && node.querySelectorAll(selector).forEach(addReformBtn);
+        if(node.matches && node.matches(selector)) addReformBtn(node);
+      });
+    });
+  });
+  obs2.observe(document.body, {childList:true, subtree:true});
+}
+
+/* ══════════════════════════════════
+   REFORMULATION ACADÉMIQUE
+══════════════════════════════════ */
+let _selectedTone = 'academique';
+
+const REFORM_PROMPTS = {
+  academique: 'Reformule ce texte dans un style académique rigoureux, adapté à un mémoire de Master en ingénierie pédagogique et médias numériques. Utilise un vocabulaire précis, des tournures impersonnelles, et une structure argumentative claire. Conserve le sens original.',
+  master: 'Reformule ce texte dans le style d\'un mémoire professionnel de Master. Ton analytique et distancié, ancrage dans la pratique professionnelle, formulations nuancées. Adapté pour un jury universitaire.',
+  reflexif: 'Reformule ce texte selon la posture réflexive de Donald Schön (praticien réflexif). Mets en valeur la réflexion dans et sur l\'action, l\'apprentissage par l\'expérience, la distanciation critique par rapport à sa propre pratique.',
+  leboterf: 'Reformule ce texte selon le cadre théorique de Guy Le Boterf sur la compétence professionnelle. Met en valeur la mobilisation de ressources en situation, la combinatoire de savoirs, le savoir-agir en contexte.',
+  synthetique: 'Reformule ce texte de manière plus synthétique et précise, en gardant uniquement l\'essentiel. Phrases courtes, vocabulaire professionnel, sans redondances.',
+};
+
+function openReformModal(prefilledText=''){
+  const modal = document.getElementById('reformModal');
+  const inp = document.getElementById('reformInput');
+  modal.classList.add('open');
+  inp.value = prefilledText || (window.getSelection()?.toString() || '');
+  document.getElementById('reformResult').style.display = 'none';
+  inp.focus();
+}
+
+async function doReform(){
+  const txt = document.getElementById('reformInput').value.trim();
+  if(!txt){ toast('⚠️ Écris un texte à reformuler','var(--orn)'); return; }
+  const resultDiv = document.getElementById('reformResult');
+  const resultText = document.getElementById('reformResultText');
+  resultDiv.style.display = 'block';
+  resultText.textContent = '⏳ Reformulation en cours…';
+  const prompt = REFORM_PROMPTS[_selectedTone] || REFORM_PROMPTS.academique;
+  try{
+    const r = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:800,
+        messages:[{role:'user', content:`${prompt}\n\nTexte à reformuler :\n"${txt}"\n\nRéponds uniquement avec le texte reformulé, sans introduction ni commentaire.`}]
+      })
+    });
+    const d = await r.json();
+    const result = d.content?.map(c=>c.text||'').join('')||'';
+    if(result){
+      resultText.textContent = result;
+      toast('✍️ Reformulation prête — clique "Copier"');
+    } else {
+      resultText.textContent = '⚠️ Erreur. Vérifie ta connexion.';
+    }
+  }catch(e){
+    resultText.textContent = '⚠️ Erreur réseau : '+e.message;
+  }
+}
+
+function copyReform(){
+  const txt = document.getElementById('reformResultText').textContent;
+  if(!txt||txt.startsWith('⏳')||txt.startsWith('⚠️')){ toast('⚠️ Génère d\'abord une reformulation','var(--orn)'); return; }
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Copié !'));
+}
+
+// Gestion des boutons de ton
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('reform-tone-btn')){
+    document.querySelectorAll('.reform-tone-btn').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    _selectedTone = e.target.dataset.tone;
+  }
+});
+
+// Raccourci Ctrl+Shift+R — ouvre la reformulation avec le texte sélectionné
+document.addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key==='R'){
+    e.preventDefault();
+    openReformModal(window.getSelection()?.toString()||'');
+  }
+});
+
 loadAll();
 renderKpis();
 renderQuestionnaire();
 initTheme();
-// Attendre que Google soit chargé avant d'initialiser Drive
+enableSpellcheck();
+setTimeout(enableReformBtns, 500);
 if(window.google){ gdInit(); }
 else { window.addEventListener('load', ()=>{ setTimeout(gdInit, 500); }); }
 setTimeout(initCollapseAndDrag, 100);

@@ -392,10 +392,10 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .tcustom { background:rgba(255,255,255,.05); color:var(--t2); }
 
 /* ═══ PUBLIC ═══ */
-.pgrid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
-.pi { padding:9px 11px; background:var(--s2); border-radius:7px; border-left:2px solid var(--blue); }
-.pit { font-size:10px; font-weight:700; color:var(--t1); margin-bottom:2px; }
-.pid { font-size:10px; color:var(--t2); }
+.pgrid { display:flex; flex-direction:column; gap:6px; }
+.pi { display:flex; align-items:flex-start; gap:8px; padding:9px 11px; background:var(--s2); border-radius:7px; border-left:2px solid var(--blue); position:relative; }
+.pit { font-size:11px; font-weight:700; color:var(--t1); margin-bottom:2px; }
+.pid { font-size:10px; color:var(--t2); line-height:1.4; }
 
 /* ═══ DIFFICULTÉS ═══ */
 .dlist { display:flex; flex-direction:column; gap:5px; }
@@ -537,7 +537,30 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 
 /* ═══ AUTOCORRECTION ═══ */
 .spellcheck-highlight { text-decoration:underline wavy var(--orn); cursor:pointer; }
-/* ═══ AJOUT BLOCS PERSONNALISÉS ═══ */
+/* ═══ ASSISTANT CLAUDE ═══ */
+#assistant-panel { position:fixed; right:0; top:0; height:100vh; width:360px; background:var(--s1); border-left:1px solid var(--b2); z-index:9995; display:none; flex-direction:column; box-shadow:-4px 0 24px rgba(0,0,0,.4); }
+#assistant-panel.open { display:flex; }
+.asst-head { padding:14px 16px; border-bottom:1px solid var(--b1); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.asst-head-title { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; color:var(--t1); flex:1; }
+.asst-head-sub { font-size:9px; color:var(--t3); }
+.asst-close { background:transparent; border:none; color:var(--t3); font-size:18px; cursor:pointer; }
+.asst-msgs { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.asst-msg { max-width:90%; padding:9px 12px; border-radius:10px; font-size:11px; line-height:1.6; }
+.asst-msg.user { background:rgba(74,139,224,.12); border:1px solid rgba(74,139,224,.2); color:var(--t1); align-self:flex-end; border-bottom-right-radius:3px; }
+.asst-msg.asst { background:var(--s2); border:1px solid var(--b2); color:var(--t1); align-self:flex-start; border-bottom-left-radius:3px; }
+.asst-msg.asst strong { color:var(--red); }
+.asst-msg.thinking { color:var(--t3); font-style:italic; }
+.asst-foot { padding:10px 12px; border-top:1px solid var(--b1); display:flex; gap:8px; flex-shrink:0; }
+.asst-inp { flex:1; background:var(--s2); border:1px solid var(--b2); color:var(--t1); border-radius:7px; padding:8px 10px; font-size:11px; resize:none; outline:none; font-family:inherit; line-height:1.5; max-height:100px; }
+.asst-inp:focus { border-color:var(--blue); }
+.asst-send { background:var(--red); border:none; color:white; border-radius:7px; padding:8px 12px; font-size:12px; cursor:pointer; flex-shrink:0; transition:opacity .15s; }
+.asst-send:hover { opacity:.85; }
+.asst-send:disabled { opacity:.4; cursor:default; }
+.asst-suggestions { padding:8px 12px; display:flex; flex-wrap:wrap; gap:5px; border-bottom:1px solid var(--b1); flex-shrink:0; }
+.asst-sug { background:var(--s2); border:1px solid var(--b2); color:var(--t3); border-radius:12px; padding:3px 9px; font-size:9px; cursor:pointer; transition:all .15s; }
+.asst-sug:hover { border-color:var(--red); color:var(--red); }
+.asst-action-btn { display:inline-block; background:rgba(66,168,71,.1); border:1px solid rgba(66,168,71,.3); color:var(--grn); border-radius:5px; padding:3px 9px; font-size:10px; cursor:pointer; margin-top:5px; font-weight:600; }
+.asst-action-btn:hover { background:rgba(66,168,71,.2); }
 .add-bloc-btn { background:transparent; border:1px dashed var(--b2); color:var(--t3); border-radius:8px; padding:8px 20px; font-size:11px; cursor:pointer; transition:all .2s; width:100%; }
 .add-bloc-btn:hover { border-color:var(--blue); color:var(--blue); background:rgba(74,139,224,.04); }
 .custom-item { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; background:var(--s2); border-radius:6px; border-left:2px solid var(--b2); }
@@ -647,7 +670,6 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
   .phgrid { grid-template-columns:repeat(2,1fr); }
   .krow { grid-template-columns:1fr 1fr !important; }
   .nngrid { grid-template-columns:1fr !important; }
-  .pgrid  { grid-template-columns:1fr !important; }
   footer  { padding:10px 12px; flex-direction:column; text-align:center; }
 
   /* Forcer toutes les cartes à 100% */
@@ -747,8 +769,41 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <button class="sbtn" style="border-color:rgba(184,106,240,.4);color:#b86af0" onclick="genCompteRendu()">📖 Compte rendu</button>
     <button class="sbtn" style="border-color:rgba(184,106,240,.3);color:#b86af0" onclick="openReformModal()" title="Reformulation académique (Ctrl+Shift+R)">✍️ Reformuler</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
+    <button class="sbtn" style="border-color:rgba(232,83,58,.4);color:var(--red);font-weight:700" onclick="toggleAssistant()" id="assistantBtn" title="Assistant Claude — modifier le tableau via IA">🤖 Assistant</button>
   </div>
 </div>
+<!-- ASSISTANT CLAUDE -->
+<div id="assistant-panel">
+  <div class="asst-head">
+    <div>
+      <div class="asst-head-title">🤖 Assistant Claude</div>
+      <div class="asst-head-sub">Demande-moi de modifier, générer ou ajouter du contenu</div>
+    </div>
+    <button class="asst-close" onclick="toggleAssistant()">✕</button>
+  </div>
+  <div class="asst-suggestions">
+    <span class="asst-sug" onclick="asstSuggest(this)">Ajoute un bloc Feedback</span>
+    <span class="asst-sug" onclick="asstSuggest(this)">Génère 3 nouvelles compétences IP</span>
+    <span class="asst-sug" onclick="asstSuggest(this)">Ajoute un livrable manquant</span>
+    <span class="asst-sug" onclick="asstSuggest(this)">Crée un questionnaire sur Bloom</span>
+    <span class="asst-sug" onclick="asstSuggest(this)">Résume mes difficultés</span>
+    <span class="asst-sug" onclick="asstSuggest(this)">Propose des non-négociables supplémentaires</span>
+  </div>
+  <div class="asst-msgs" id="asst-msgs">
+    <div class="asst-msg asst">
+      Bonjour Karima 👋 Je suis ton assistant intégré. Tu peux me demander de :<br><br>
+      • <strong>Ajouter du contenu</strong> — un nouveau bloc, des éléments, un questionnaire<br>
+      • <strong>Générer du texte</strong> — reformuler, compléter, analyser<br>
+      • <strong>Modifier le tableau</strong> — reorganiser, enrichir les données existantes<br><br>
+      Tout ce que je génère s'intègre directement dans ton tableau. 🎯
+    </div>
+  </div>
+  <div class="asst-foot">
+    <textarea class="asst-inp" id="asst-inp" rows="2" placeholder="Ex: Ajoute un bloc 'Retours tutrice' avec 3 éléments…"></textarea>
+    <button class="asst-send" id="asst-send" onclick="asstSend()">➤</button>
+  </div>
+</div>
+
 <!-- MODAL REFORMULATION ACADÉMIQUE -->
 <div class="reform-modal" id="reformModal">
   <div class="reform-box">
@@ -2280,20 +2335,32 @@ function renderPC(){
   makeDraggable(grid,()=>STATE.publicCible,v=>{STATE.publicCible=v;},renderPC);
 }
 function makePC(pc){
-  const el=document.createElement('div'); el.className='pi'; el.style.position='relative';
-  el.innerHTML=`<span class="drag-handle" style="position:absolute;left:5px;top:8px;font-size:10px">⠿</span><div class="pit" style="padding-left:14px" contenteditable="true" spellcheck="false">${pc.titre}</div><div class="pid" style="padding-left:14px" contenteditable="true" spellcheck="false">${pc.texte}</div><button class="delbtn" style="position:absolute;right:4px;top:4px">×</button>`;
-  el.querySelector('.pit').addEventListener('blur',e=>{pc.titre=e.target.textContent.trim();markDirty();});
-  el.querySelector('.pid').addEventListener('blur',e=>{pc.texte=e.target.textContent.trim();markDirty();});
-  el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();softDelete(STATE.publicCible,pc,renderPC,'Étiquette supprimée');});
+  const el = document.createElement('div');
+  el.className = 'pi';
+  el.dataset.id = pc.id;
+  el.innerHTML = `
+    <span class="drag-handle" title="Déplacer">⠿</span>
+    <div class="oinf" style="flex:1;min-width:0">
+      <div class="pit">${pc.titre}</div>
+      <div class="pid">${pc.texte}</div>
+    </div>
+    <button class="delbtn">×</button>`;
+  makeEditable(el.querySelector('.pit'), ()=>pc.titre, v=>{ pc.titre=v; });
+  makeEditable(el.querySelector('.pid'), ()=>pc.texte, v=>{ pc.texte=v; });
+  el.querySelector('.delbtn').addEventListener('click', e=>{
+    e.stopPropagation();
+    softDelete(STATE.publicCible, pc, renderPC, 'Étiquette supprimée');
+  });
   return el;
 }
 function addPC(){
   const inp=document.getElementById('pcInp'); const val=inp.value.trim(); if(!val) return;
   if(!STATE.publicCible) STATE.publicCible=[];
-  const pc={id:'pc'+Date.now(),titre:val,texte:'...'};
+  const pc={id:'pc'+Date.now(),titre:val,texte:'Double-clic pour modifier…'};
   STATE.publicCible.push(pc);
   const grid=document.getElementById('pgrid'); const el=makePC(pc); grid.appendChild(el);
-  el.querySelector('.pid').focus(); inp.value=''; markDirty();
+  el.querySelector('.pid').dispatchEvent(new MouseEvent('dblclick'));
+  inp.value=''; markDirty();
 }
 
 /* ══ COMPTE RENDU ══ */
@@ -3100,6 +3167,227 @@ document.addEventListener('click', e=>{
     document.querySelectorAll('.reform-tone-btn').forEach(b=>b.classList.remove('active'));
     e.target.classList.add('active');
     _selectedTone = e.target.dataset.tone;
+  }
+});
+
+/* ══════════════════════════════════
+   ASSISTANT CLAUDE INTÉGRÉ
+══════════════════════════════════ */
+let _asstHistory = [];
+
+function toggleAssistant(){
+  const panel = document.getElementById('assistant-panel');
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open')){
+    document.getElementById('asst-inp').focus();
+  }
+}
+
+function asstSuggest(el){
+  const inp = document.getElementById('asst-inp');
+  inp.value = el.textContent;
+  inp.focus();
+}
+
+function asstAddMsg(role, html){
+  const msgs = document.getElementById('asst-msgs');
+  const d = document.createElement('div');
+  d.className = `asst-msg ${role}`;
+  d.innerHTML = html;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  return d;
+}
+
+function asstGetContext(){
+  return {
+    livrables: (STATE.livrables||[]).map(l=>({name:l.name, det:l.det, status:l.status})),
+    outils: (STATE.outils||[]).map(o=>({name:o.name, role:o.role, tag:o.tag})),
+    diffs: (STATE.diffs||[]).map(d=>({title:d.title, sub:d.sub})),
+    nns: (STATE.nns||[]).map(n=>({txt:n.txt})),
+    competences: (STATE.competences||[]).map(c=>({nom:c.nom})),
+    customBlocs: (STATE.customBlocs||[]).map(b=>({titre:b.titre, items:b.items?.map(i=>i.text)||[]})),
+    notes: (STATE.notes||[]).map(n=>n.text),
+    memoire: (STATE.memoire||[]).map(r=>({title:r.title})),
+  };
+}
+
+const ASST_SYSTEM = `Tu es l'assistant intégré du tableau de bord de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum. Son mémoire porte sur : "Dans quelle mesure le recours autonome à une chaîne d'outils IA peut-il compenser l'absence d'encadrement professionnel en ingénierie pédagogique ?"
+
+Tu peux modifier son tableau de bord directement via des actions JSON. 
+
+Quand tu dois modifier le tableau, réponds TOUJOURS avec :
+1. Un texte explicatif bref (ce que tu vas faire)
+2. Un bloc JSON entre balises <ACTION> et </ACTION> avec la structure suivante :
+
+<ACTION>
+{
+  "type": "add_bloc" | "add_livrable" | "add_diff" | "add_nn" | "add_competence" | "add_note" | "add_custom_items" | "update_info",
+  "data": { ... }
+}
+</ACTION>
+
+Types d'actions disponibles :
+- add_bloc : { "col": "left"|"right", "titre": "...", "emoji": "...", "items": ["item1", "item2"] }
+- add_livrable : { "name": "...", "det": "..." }
+- add_diff : { "title": "...", "sub": "...", "ico": "🔴" }
+- add_nn : { "txt": "..." }
+- add_competence : { "nom": "..." }
+- add_note : { "text": "..." }
+- add_custom_items : { "blocTitre": "titre du bloc existant", "items": ["item1", "item2"] }
+- update_info : pas d'action DOM, juste du texte
+
+Tu peux chaîner plusieurs actions en envoyant plusieurs blocs <ACTION>...</ACTION>.
+Réponds en français, de manière concise et professionnelle.`;
+
+async function asstSend(){
+  const inp = document.getElementById('asst-inp');
+  const msg = inp.value.trim();
+  if(!msg) return;
+
+  const sendBtn = document.getElementById('asst-send');
+  sendBtn.disabled = true;
+  inp.value = '';
+
+  // Afficher le message utilisateur
+  asstAddMsg('user', msg);
+
+  // Afficher "en train de réfléchir"
+  const thinking = asstAddMsg('asst thinking', '⏳ En train de réfléchir…');
+
+  // Construire le contexte
+  const ctx = asstGetContext();
+  const contextStr = `Contexte actuel du tableau de bord :\n${JSON.stringify(ctx, null, 2)}`;
+
+  // Ajouter à l'historique
+  _asstHistory.push({role:'user', content: `${contextStr}\n\nDemande : ${msg}`});
+
+  try{
+    const r = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        system: ASST_SYSTEM,
+        messages: _asstHistory.slice(-6) // Garder les 6 derniers messages
+      })
+    });
+    const d = await r.json();
+    const response = d.content?.map(c=>c.text||'').join('')||'';
+
+    thinking.remove();
+    _asstHistory.push({role:'assistant', content: response});
+
+    // Parser et exécuter les actions
+    const actions = [];
+    const actionRegex = /<ACTION>([\s\S]*?)<\/ACTION>/g;
+    let match;
+    while((match = actionRegex.exec(response)) !== null){
+      try{ actions.push(JSON.parse(match[1].trim())); } catch(e){}
+    }
+
+    // Afficher la réponse (sans les blocs ACTION)
+    const displayText = response.replace(/<ACTION>[\s\S]*?<\/ACTION>/g,'').trim();
+    const msgEl = asstAddMsg('asst', displayText.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'));
+
+    // Exécuter les actions
+    if(actions.length > 0){
+      const resultMsgs = [];
+      actions.forEach(action=>{
+        try{
+          const res = asstExecuteAction(action);
+          if(res) resultMsgs.push(res);
+        }catch(e){ resultMsgs.push('⚠️ Erreur: '+e.message); }
+      });
+      if(resultMsgs.length){
+        asstAddMsg('asst', '✅ ' + resultMsgs.join('<br>✅ '));
+      }
+      markDirty();
+    }
+
+  }catch(e){
+    thinking.remove();
+    asstAddMsg('asst', '⚠️ Erreur réseau : '+e.message);
+  }
+
+  sendBtn.disabled = false;
+  inp.focus();
+}
+
+function asstExecuteAction(action){
+  switch(action.type){
+
+    case 'add_bloc': {
+      const bloc = {
+        id: 'custom-'+uid(),
+        titre: action.data.titre || 'Nouveau bloc',
+        emoji: action.data.emoji || '📋',
+        items: (action.data.items||[]).map(t=>({id:uid(), text:t})),
+        col: action.data.col || 'left'
+      };
+      if(!STATE.customBlocs) STATE.customBlocs=[];
+      STATE.customBlocs.push(bloc);
+      renderCustomBloc(bloc, bloc.col);
+      return `Bloc "${bloc.titre}" ajouté en colonne ${bloc.col==='left'?'gauche':'droite'}`;
+    }
+
+    case 'add_livrable': {
+      const lv = {id:uid(), name:action.data.name, det:action.data.det||'', status:'todo', difficulty:0, notes:[], media:[], prompts:[], files:[]};
+      STATE.livrables.push(lv);
+      renderLivrables();
+      return `Livrable "${lv.name}" ajouté`;
+    }
+
+    case 'add_diff': {
+      const df = {id:uid(), ico:action.data.ico||'🔴', title:action.data.title, sub:action.data.sub||'', notes:[], media:[], files:[]};
+      STATE.diffs.push(df);
+      renderDiffs();
+      return `Difficulté "${df.title}" ajoutée`;
+    }
+
+    case 'add_nn': {
+      const nn = {id:uid(), num:STATE.nns.length+1, txt:action.data.txt, notes:[], media:[], files:[]};
+      STATE.nns.push(nn);
+      renderNNs();
+      return `Non-négociable ajouté`;
+    }
+
+    case 'add_competence': {
+      if(!STATE.competences) STATE.competences=[];
+      const c = {id:uid(), nom:action.data.nom, eval:0, notes:[], media:[], files:[]};
+      STATE.competences.push(c);
+      renderComps();
+      return `Compétence "${c.nom}" ajoutée`;
+    }
+
+    case 'add_note': {
+      if(!STATE.notes) STATE.notes=[];
+      STATE.notes.push({id:uid(), text:action.data.text, date:now()});
+      renderNotesList();
+      return `Note ajoutée`;
+    }
+
+    case 'add_custom_items': {
+      const bloc = (STATE.customBlocs||[]).find(b=>b.titre.toLowerCase().includes((action.data.blocTitre||'').toLowerCase()));
+      if(!bloc) return `⚠️ Bloc "${action.data.blocTitre}" non trouvé`;
+      (action.data.items||[]).forEach(t=>{ if(!bloc.items)bloc.items=[]; bloc.items.push({id:uid(), text:t}); });
+      renderCustomItems(bloc);
+      return `${action.data.items?.length||0} éléments ajoutés dans "${bloc.titre}"`;
+    }
+
+    default: return null;
+  }
+}
+
+// Entrée avec Ctrl+Entrée ou Shift+Entrée pour nouvelle ligne
+document.getElementById('asst-inp')?.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); asstSend(); }
+});
+document.addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key==='R'){
+    e.preventDefault();
+    openReformModal(window.getSelection()?.toString()||'');
   }
 });
 

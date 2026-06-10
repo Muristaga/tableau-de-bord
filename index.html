@@ -269,7 +269,7 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .two-cols { display:grid; grid-template-columns:1fr 1fr; gap:11px; align-items:start; }
 .col-drop { display:flex; flex-direction:column; gap:11px; min-height:200px; padding:4px; border-radius:8px; transition:background .2s; }
 .col-drop.drag-over-col { background:rgba(255,255,255,.03); border:1px dashed var(--blue); }
-.card { background:var(--s1); border-radius:9px; padding:18px; border:1px solid var(--b1); transition:border-color .2s; }
+.card { background:var(--s1); border-radius:9px; padding:18px; border:1px solid var(--b1); transition:border-color .2s; position:relative; }
 .card.collapsed > .card-body { display:none; }
 .card.dragging-card { opacity:.4; transform:scale(.98); }
 .card.drag-over-card { border-color:var(--blue) !important; border-style:dashed !important; }
@@ -281,6 +281,14 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .card-drag-handle { cursor:grab; color:var(--t3); font-size:13px; padding:0 2px; flex-shrink:0; }
 .card-drag-handle:active { cursor:grabbing; }
 .card-drag-handle:hover { color:var(--t2); }
+.bloc-del-btn { 
+  background:transparent; border:none; color:var(--t3); 
+  font-size:15px; cursor:pointer; padding:0 4px; 
+  transition:color .15s; line-height:1; z-index:2;
+  border-radius:4px; flex-shrink:0; margin-left:6px;
+}
+.bloc-del-btn:hover { color:var(--red); background:rgba(232,83,58,.08); }
+.card { position:relative; }
 /* Logo auto outil */
 .ologo-auto { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; flex-shrink:0; }
 .card:hover { border-color:var(--b2); }
@@ -400,7 +408,7 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 /* ═══ DIFFICULTÉS ═══ */
 .dlist { display:flex; flex-direction:column; gap:5px; }
 .dwrap { display:flex; flex-direction:column; background:rgba(232,83,58,.025); border:1px solid rgba(232,83,58,.09); border-radius:7px; overflow:hidden; }
-.drow  { display:flex; gap:8px; align-items:flex-start; padding:7px 10px; cursor:pointer; transition:background .15s; }
+.drow  { display:flex; gap:8px; align-items:center; padding:7px 10px; cursor:pointer; transition:background .15s; }
 .drow:hover { background:rgba(232,83,58,.04); }
 .dwrap.sel  { border-color:var(--red); }
 .dico  { font-size:11px; flex-shrink:0; margin-top:1px; }
@@ -473,9 +481,11 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .media-del:hover { background:rgba(180,40,40,.9); }
 .media-label { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.7); font-size:8px; color:#ccc; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .play-icon { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:20px; opacity:.85; }
-.media-upload-row { display:flex; gap:5px; }
-.media-upload-btn { display:flex; align-items:center; gap:4px; background:var(--s2); border:1px dashed var(--b2); color:var(--t3); border-radius:5px; padding:5px 10px; cursor:pointer; font-size:10px; transition:all .2s; flex:1; justify-content:center; }
-.media-upload-btn:hover { border-color:var(--b3); color:var(--t2); }
+.media-upload-row { display:flex; gap:5px; flex-wrap:wrap; }
+.media-upload-btn { display:flex; align-items:center; gap:6px; background:var(--s2); border:1px dashed var(--b2); color:var(--t3); border-radius:7px; padding:8px 12px; cursor:pointer; font-size:11px; font-weight:600; transition:all .2s; flex:1; justify-content:center; }
+.media-upload-btn:hover { border-color:var(--blue); color:var(--blue); background:rgba(74,139,224,.05); }
+.media-type-btn:hover { border-color:var(--red); color:var(--red); background:rgba(232,83,58,.05); }
+.media-source-btn { font-size:10px; }
 
 /* PROMPTS */
 .prompt-list { display:flex; flex-direction:column; gap:5px; margin-bottom:7px; }
@@ -563,6 +573,33 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .asst-action-btn:hover { background:rgba(66,168,71,.2); }
 .add-bloc-btn { background:transparent; border:1px dashed var(--b2); color:var(--t3); border-radius:8px; padding:8px 20px; font-size:11px; cursor:pointer; transition:all .2s; width:100%; }
 .add-bloc-btn:hover { border-color:var(--blue); color:var(--blue); background:rgba(74,139,224,.04); }
+.abm-sug { background:var(--s2); border:1px solid var(--b2); color:var(--t3); border-radius:12px; padding:3px 9px; font-size:9px; cursor:pointer; transition:all .15s; }
+.abm-sug:hover { border-color:var(--blue); color:var(--blue); }
+/* ═══ MODALE AJOUT BLOC ═══ */
+.add-bloc-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:10002; align-items:center; justify-content:center; padding:20px; }
+.add-bloc-modal.open { display:flex; }
+.add-bloc-box { background:var(--s1); border:1px solid var(--b2); border-radius:12px; width:100%; max-width:520px; overflow:hidden; }
+.add-bloc-head { padding:16px 20px; border-bottom:1px solid var(--b1); display:flex; align-items:center; justify-content:space-between; }
+.add-bloc-head-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--t1); }
+.add-bloc-body { padding:20px; display:flex; flex-direction:column; gap:16px; }
+.add-bloc-section { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--t3); margin-bottom:6px; }
+.add-bloc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.add-bloc-choice { background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:10px 8px; text-align:center; cursor:pointer; transition:all .15s; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.add-bloc-choice:hover { border-color:var(--blue); background:rgba(74,139,224,.06); }
+.add-bloc-choice.selected { border-color:var(--blue); background:rgba(74,139,224,.1); }
+.add-bloc-choice-icon { font-size:18px; }
+.add-bloc-choice-label { font-size:10px; font-weight:600; color:var(--t1); }
+.add-bloc-choice-sub { font-size:9px; color:var(--t3); }
+.add-bloc-col-choice { display:flex; gap:8px; }
+.add-bloc-col-btn { flex:1; background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:10px; text-align:center; cursor:pointer; font-size:11px; font-weight:600; color:var(--t2); transition:all .15s; }
+.add-bloc-col-btn:hover { border-color:var(--blue); color:var(--blue); }
+.add-bloc-col-btn.selected { border-color:var(--blue); background:rgba(74,139,224,.1); color:var(--blue); }
+.add-bloc-foot { padding:14px 20px; border-top:1px solid var(--b1); display:flex; gap:8px; justify-content:flex-end; }
+.claude-notif { position:fixed; bottom:70px; right:18px; background:var(--s1); border:1px solid var(--b2); border-left:3px solid var(--red); border-radius:10px; padding:12px 14px; z-index:9998; max-width:280px; box-shadow:0 4px 20px rgba(0,0,0,.5); animation:fi .2s ease; }
+.claude-notif-title { font-size:11px; font-weight:700; color:var(--t1); margin-bottom:4px; }
+.claude-notif-sub { font-size:10px; color:var(--t3); margin-bottom:10px; }
+.claude-notif-btns { display:flex; gap:6px; }
+.claude-notif-btns button { flex:1; padding:5px 6px; border-radius:6px; font-size:10px; cursor:pointer; font-weight:600; transition:all .15s; }
 .custom-item { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; background:var(--s2); border-radius:6px; border-left:2px solid var(--b2); }
 .custom-item-text { flex:1; font-size:11px; color:var(--t1); line-height:1.5; min-width:20px; outline:none; }
 .custom-item-del { background:transparent; border:none; color:var(--t3); cursor:pointer; font-size:13px; padding:0 2px; flex-shrink:0; }
@@ -756,6 +793,18 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <span id="sstatus">Tout est sauvegardé</span>
     <span id="storageBar"></span>
   </div>
+  <!-- BARRE DE RECHERCHE GLOBALE -->
+  <div style="display:flex;align-items:center;gap:6px;flex:1;max-width:280px;margin:0 12px">
+    <div style="position:relative;flex:1">
+      <input id="global-search" type="text" placeholder="🔍 Rechercher dans le tableau…" 
+        style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:4px 28px 4px 9px;font-size:10px;outline:none;"
+        oninput="globalSearch(this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();globalSearchNext();}"
+        autocomplete="off">
+      <button id="search-clear" onclick="clearSearch()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--t3);font-size:12px;cursor:pointer;display:none">✕</button>
+    </div>
+    <div id="search-count" style="font-size:9px;color:var(--t3);white-space:nowrap;display:none"></div>
+  </div>
   <div class="sbtns">
     <button class="sbtn" style="border-color:rgba(66,168,71,.3);color:var(--grn)" id="gdBtn" onclick="gdConnect()">☁️ Drive</button>
     <button class="sbtn" onclick="gdLoad()">☁️ Charger Drive</button>
@@ -768,10 +817,47 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <button class="sbtn"      onclick="saveAll()">💾 Sauvegarder</button>
     <button class="sbtn" style="border-color:rgba(184,106,240,.4);color:#b86af0" onclick="genCompteRendu()">📖 Compte rendu</button>
     <button class="sbtn" style="border-color:rgba(184,106,240,.3);color:#b86af0" onclick="openReformModal()" title="Reformulation académique (Ctrl+Shift+R)">✍️ Reformuler</button>
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
     <button class="sbtn" style="border-color:rgba(232,83,58,.4);color:var(--red);font-weight:700" onclick="toggleAssistant()" id="assistantBtn" title="Assistant Claude — modifier le tableau via IA">🤖 Assistant</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
   </div>
 </div>
+<!-- MODALE AJOUT BLOC / ÉLÉMENT -->
+<div class="add-bloc-modal" id="addBlocModal">
+  <div class="add-bloc-box" style="max-width:480px">
+    <div class="add-bloc-head">
+      <span class="add-bloc-head-title">＋ Ajouter un bloc ou un élément</span>
+      <button onclick="document.getElementById('addBlocModal').classList.remove('open')" style="position:absolute;top:10px;right:12px;background:transparent;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="add-bloc-body">
+
+      <div style="font-size:10px;color:var(--t2);line-height:1.6;margin-bottom:4px">
+        Décris directement ce que tu veux — en langage naturel, comme un prompt :
+      </div>
+
+      <textarea id="abm-prompt-main" class="addinp" rows="5"
+        placeholder="Ex : Crée un bloc « Retours tutrice » avec une jauge d'évaluation, des captures d'écran et une zone de commentaires.&#10;&#10;Ou : Dans le bloc Compétences, à l'élément « Utiliser Claude », ajoute une jauge d'autoévaluation et des fichiers justificatifs.&#10;&#10;Ou : Duplique le bloc Livrables dans la colonne droite."
+        style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;line-height:1.6;min-height:120px"></textarea>
+
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:2px">
+        <span class="abm-sug" onclick="abmInjectSug('Crée un nouveau bloc « » avec une jauge, des captures et des fichiers')">📋 Nouveau bloc</span>
+        <span class="abm-sug" onclick="abmInjectSug('Dans le bloc «  », ajoute une jauge d\\'évaluation')">📊 Ajouter une jauge</span>
+        <span class="abm-sug" onclick="abmInjectSug('Dans le bloc «  », ajoute des captures d\\'écran et des fichiers')">🖼️ Captures + fichiers</span>
+        <span class="abm-sug" onclick="abmInjectSug('Duplique le bloc «  » dans la colonne gauche')">⧉ Dupliquer un bloc</span>
+        <span class="abm-sug" onclick="abmInjectSug('Dans le bloc «  », à l\\'élément «  », ajoute une zone de commentaires')">💬 Commentaires</span>
+      </div>
+
+      <div style="font-size:9px;color:var(--t3);margin-top:6px">
+        💡 Tu peux toujours revenir modifier n'importe quel élément plus tard. Rien n'est définitif.
+      </div>
+
+    </div>
+    <div class="add-bloc-foot">
+      <button class="sbtn" onclick="document.getElementById('addBlocModal').classList.remove('open')">Annuler</button>
+      <button class="sbtn pri" onclick="abmSendPrompt()">🤖 Envoyer à Claude</button>
+    </div>
+  </div>
+</div>
+
 <!-- ASSISTANT CLAUDE -->
 <div id="assistant-panel">
   <div class="asst-head">
@@ -799,7 +885,10 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     </div>
   </div>
   <div class="asst-foot">
-    <textarea class="asst-inp" id="asst-inp" rows="2" placeholder="Ex: Ajoute un bloc 'Retours tutrice' avec 3 éléments…"></textarea>
+    <div style="position:relative;flex:1">
+      <textarea class="asst-inp" id="asst-inp" rows="2" placeholder="Ex: Ajoute un bloc… ou colle une capture (Ctrl+V)"></textarea>
+      <div id="asst-paste-preview" style="display:none;margin-top:4px;border-radius:5px;overflow:hidden;max-height:80px"></div>
+    </div>
     <button class="asst-send" id="asst-send" onclick="asstSend()">➤</button>
   </div>
 </div>
@@ -864,7 +953,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
   <div class="full-row">
     <!-- OBJECTIF -->
     <div class="card obj" id="card-objectif">
-      <div class="ctitle collapsible" data-target="card-objectif">🎯 Objectif Principal <span class="ctitle-collapse">▼</span></div>
+      <div class="ctitle collapsible" data-target="card-objectif">🎯 Objectif Principal <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-objectif','🎯 Objectif',event)" title="Supprimer ce bloc">×</button></div>
       <div class="card-body">
         <div class="otxt">Concevoir, de A à Z, une formation e-learning <em>certifiante</em> sur l'IA —<br>seule, sans budget LMS, sans binôme, en 6 semaines.</div>
         <div class="osub">Intitulé : « L'IA pour votre TPE : Améliorer sa TPE à l'aide de l'IA » · Public : dirigeants de TPE non-tech · Point de départ : zéro expérience en IP.</div>
@@ -876,7 +965,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
 
     <!-- CHAÎNE -->
     <div class="card chsec" id="card-chaine">
-      <div class="ctitle collapsible" data-target="card-chaine">⛓️ Chaîne de Fabrication — Cliquer pour lire · 📝 remarques · 🎯 prompts <span class="ctitle-collapse">▼</span></div>
+      <div class="ctitle collapsible" data-target="card-chaine">⛓️ Chaîne de Fabrication — Cliquer pour lire · 📝 remarques · 🎯 prompts <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-chaine','⛓️ Chaîne de Fabrication',event)" title="Supprimer ce bloc">×</button></div>
       <div class="card-body">
         <div class="chflow" id="chflow"></div>
         <div class="chdet" id="chdet"></div>
@@ -886,7 +975,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
 
     <!-- PHASES -->
     <div class="card phsec" id="card-phases">
-      <div class="ctitle collapsible" data-target="card-phases">📅 Phases — Cliquer pour basculer <span class="ctitle-collapse">▼</span></div>
+      <div class="ctitle collapsible" data-target="card-phases">📅 Phases — Cliquer pour basculer <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-phases','📅 Phases',event)" title="Supprimer ce bloc">×</button></div>
       <div class="card-body">
         <div class="phgrid">
           <div class="phase done"   data-ph="1"><div class="pnum">PHASE 1</div><div class="pname">Analyse des besoins</div><div class="pwks">Sem. 1</div><div class="pdot"></div></div>
@@ -914,13 +1003,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-livrables">
           <span class="card-drag-handle">⠿</span>
           📦 Livrables — ✓ statut · 📝 · 📎 · 🎯 · 📁
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-livrables','📦 Livrables',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <ul class="lvlist" id="lvlist"></ul>
           <div class="addrow">
             <input class="addinp" id="lvinp" placeholder="Ajouter un livrable…">
-            <button class="addbtn" onclick="addLivrable()">+ Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('livrables')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -930,13 +1019,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-outils">
           <span class="card-drag-handle">⠿</span>
           🛠️ Outils — 📝 · 📎 · 🎯 · 📁
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-outils','🛠️ Outils',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div class="ochain" id="ochain"></div>
           <div class="addrow" style="margin-top:8px">
             <input class="addinp" id="oinp" placeholder="Ajouter un outil…">
-            <button class="addbtn" onclick="addOutil()">+ Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('outils')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -946,13 +1035,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-diffs">
           <span class="card-drag-handle">⠿</span>
           🔴 Difficultés — 📝 · 📎 · 📁
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-diffs','🔴 Difficultés',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div class="dlist" id="dlist"></div>
           <div class="addrow" style="margin-top:8px">
             <input class="addinp" id="dinp" placeholder="Ajouter une difficulté…">
-            <button class="addbtn" onclick="addDiff()">+ Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('diffs')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -962,13 +1051,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-nns">
           <span class="card-drag-handle">⠿</span>
           🔒 Non-Négociables — 📝 · 📎 · 📁
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-nns','🔒 Non-Négociables',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div class="nngrid" id="nngrid"></div>
           <div class="addrow" style="margin-top:8px">
             <input class="addinp" id="nninp" placeholder="Ajouter un non-négociable…">
-            <button class="addbtn" onclick="addNN()">+ Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('nns')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -978,13 +1067,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-competences">
           <span class="card-drag-handle">⠿</span>
           🎓 Compétences / Savoirs développés
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-competences','🎓 Compétences',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div id="complist" style="display:flex;flex-direction:column;gap:8px;margin:10px 0"></div>
           <div class="addrow">
             <input class="addinp" id="compInp" placeholder="Ajouter une compétence…">
-            <button class="addbtn" onclick="addComp()">+ Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('competences')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -994,13 +1083,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-notes">
           <span class="card-drag-handle">⠿</span>
           🗒️ Notes
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-notes','🗒️ Notes',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div id="noteslist" style="display:flex;flex-direction:column;gap:6px;min-height:20px;margin-bottom:8px"><div class="gempty">Aucune note. Écris ci-dessous ↓</div></div>
           <div class="addrow">
             <textarea class="gtarea" id="noteinp" rows="3" placeholder="Note libre, idée, réflexion…" style="flex:1"></textarea>
-            <button class="addbtn" onclick="addNote()">Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('notes')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -1015,13 +1104,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-memoire">
           <span class="card-drag-handle">⠿</span>
           📖 Mémoire — Dépôt des rédactions
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-memoire','📖 Mémoire',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div id="memoireList"></div>
           <div class="addrow">
             <input class="addinp" id="memInp" placeholder="Nouvelle rubrique (ex: Cadre théorique)…">
-            <button class="addbtn" onclick="addMemRub()">+ Rubrique</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('memoire')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -1031,13 +1120,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-public">
           <span class="card-drag-handle">⠿</span>
           👥 Public Cible
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-public','👥 Public Cible',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div class="pgrid" id="pgrid"></div>
           <div class="addrow" style="margin-top:8px">
             <input class="addinp" id="pcInp" placeholder="Nouvelle étiquette…">
-            <button class="addbtn" onclick="addPC()">+ Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('public')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -1047,24 +1136,24 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-priorite">
           <span class="card-drag-handle">⠿</span>
           🏆 Triple Priorité — Auto-évaluation
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-priorite','🏆 Triple Priorité',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div style="display:flex;flex-direction:column;gap:7px">
             <div class="pi" style="border-left-color:var(--red)">
               <div class="pit">🚀 Livrer</div>
               <div class="pid">La formation certifiante complète, testable sur LMS</div>
-              <div id="g-livrer" style="margin-top:6px"></div>
+              <div id="g-livrer" style="margin-top:6px;width:100%"></div>
             </div>
             <div class="pi" style="border-left-color:var(--gold)">
               <div class="pit">📚 Apprendre</div>
               <div class="pid">Maîtriser le métier d'IP en marchant — sans filet</div>
-              <div id="g-apprendre" style="margin-top:6px"></div>
+              <div id="g-apprendre" style="margin-top:6px;width:100%"></div>
             </div>
             <div class="pi" style="border-left-color:var(--grn)">
               <div class="pit">✅ Convaincre</div>
               <div class="pid">Prouver à la tutrice la valeur de ce travail</div>
-              <div id="g-convaincre" style="margin-top:6px"></div>
+              <div id="g-convaincre" style="margin-top:6px;width:100%"></div>
             </div>
           </div>
         </div>
@@ -1075,13 +1164,13 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
         <div class="ctitle collapsible" data-target="card-remarques">
           <span class="card-drag-handle">⠿</span>
           📝 Remarques Générales
-          <span class="ctitle-collapse">▼</span>
+          <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-remarques','📝 Remarques',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
           <div class="glist" id="glist"><div class="gempty">Aucune remarque. Écris ci-dessous ↓</div></div>
           <div class="addrow">
             <textarea class="gtarea" id="ginp" rows="2" placeholder="Observation globale, note de terrain…"></textarea>
-            <button class="addbtn" onclick="addGlobal()">Ajouter</button>
+            <button class="addbtn" onclick="duplicateLastInBloc('remarques')">+ Ajouter</button>
           </div>
         </div>
       </div>
@@ -1095,29 +1184,24 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
       <div class="ctitle collapsible" data-target="card-questionnaire">
         <span class="card-drag-handle">⠿</span>
         🧠 Questionnaire réflexif — Expertise IP & IA
-        <span class="ctitle-collapse">▼</span>
+        <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-questionnaire','🧠 Questionnaire',event)" title="Supprimer ce bloc">×</button>
       </div>
       <div class="card-body">
         <div style="font-size:10px;color:var(--t3);margin-bottom:14px;padding:8px 12px;background:var(--s2);border-radius:6px;border-left:2px solid var(--blue)">
           Ce questionnaire est ton terrain de recherche. Tes réponses alimentent directement le compte rendu et constituent la matière brute de ton mémoire. Sois précise, honnête, et n'hésite pas à nuancer. L'IA analyse ensuite ton expertise IP développée pendant ce stage.
         </div>
         <div id="questionnaire-list" style="display:flex;flex-direction:column;gap:18px"></div>
-        <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-          <button class="sbtn pri" onclick="saveQuestionnaire()" style="font-size:11px">💾 Sauvegarder mes réponses</button>
-          <button class="sbtn" style="border-color:rgba(184,106,240,.4);color:#b86af0;font-size:11px" onclick="genCompteRendu()">📖 Générer le compte rendu avec mes réponses</button>
+        <div class="addrow" style="margin-top:12px">
+          <input class="addinp" id="q-new-inp" placeholder="Ajouter une nouvelle question…">
+          <button class="addbtn" onclick="duplicateLastInBloc('questionnaire')">+ Question</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- BOUTONS AJOUT DE BLOCS -->
-  <div class="two-cols" style="margin-top:4px">
-    <div style="display:flex;justify-content:center">
-      <button class="add-bloc-btn" onclick="addCustomBloc('left')">＋ Ajouter un bloc — Colonne gauche</button>
-    </div>
-    <div style="display:flex;justify-content:center">
-      <button class="add-bloc-btn" onclick="addCustomBloc('right')">＋ Ajouter un bloc — Colonne droite</button>
-    </div>
+  <!-- BOUTON AJOUT UNIQUE -->
+  <div style="display:flex;justify-content:center;margin-top:8px;padding:0 12px">
+    <button class="add-bloc-btn" style="max-width:400px" onclick="openAddBlocModal()">＋ Ajouter un bloc / élément</button>
   </div>
 
 </main>
@@ -1229,7 +1313,7 @@ const INIT_MEM=[
 let STATE={
   livrables:[], outils:[], diffs:[], nns:[], memoire:[],
   chNotes:{}, chMedia:{}, chPrompts:{}, chFiles:{},
-  phases:{}, globals:[], notes:[], competences:[], questionnaire:{}, customBlocs:[],
+  phases:{}, globals:[], notes:[], competences:[], questionnaire:{}, customBlocs:[], customQuestions:[],
   autoeval:{livrer:0,apprendre:0,convaincre:0},
   savedAt:null
 };
@@ -1474,6 +1558,7 @@ function loadAll(){
       STATE.publicCible=d.publicCible||JSON.parse(JSON.stringify(INIT_PC_DATA));
       STATE.questionnaire=d.questionnaire||{};
       STATE.customBlocs=d.customBlocs||[];
+      STATE.customQuestions=d.customQuestions||[];
       compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
       if(d.savedAt){const dt=new Date(d.savedAt);document.getElementById('fdate').textContent='Sauvegardé le '+dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+' à '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
       if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
@@ -1647,9 +1732,44 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
     </div>
     <div class="rtab-pane" data-pane="media">
       <div class="media-grid"></div>
-      <div class="media-upload-row">
-        <label class="media-upload-btn">📷 Image<input type="file" accept="image/*" style="display:none" multiple></label>
-        <label class="media-upload-btn">🎬 Vidéo<input type="file" accept="video/*" style="display:none" multiple></label>
+      <!-- NIVEAU 1 : Photo ou Vidéo -->
+      <div class="media-upload-row" id="media-lvl1">
+        <button class="media-upload-btn media-type-btn" data-type="photo" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Photo
+        </button>
+        <button class="media-upload-btn media-type-btn" data-type="video" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          Vidéo
+        </button>
+      </div>
+      <!-- NIVEAU 2 PHOTO : Appareil ou Télécharger -->
+      <div class="media-upload-row" id="media-lvl2-photo" style="display:none">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);width:100%;margin-bottom:4px">📷 Photo — Choisir la source :</div>
+        <button class="media-upload-btn media-source-btn" data-source="camera-photo" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Appareil photo
+        </button>
+        <label class="media-upload-btn media-source-btn" style="cursor:pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Télécharger / Ctrl+V
+          <input type="file" accept="image/*" style="display:none" multiple class="media-img-inp">
+        </label>
+        <button class="media-upload-btn" style="flex:0;padding:5px 8px;font-size:9px;color:var(--t3)" type="button" onclick="this.closest('.media-upload-row').style.display='none';this.closest('.rtab-pane').querySelector('#media-lvl1').style.display='flex'">← Retour</button>
+      </div>
+      <!-- NIVEAU 2 VIDÉO : Appareil ou Télécharger -->
+      <div class="media-upload-row" id="media-lvl2-video" style="display:none">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);width:100%;margin-bottom:4px">🎥 Vidéo — Choisir la source :</div>
+        <button class="media-upload-btn media-source-btn" data-source="camera-video" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          Caméra
+        </button>
+        <label class="media-upload-btn media-source-btn" style="cursor:pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Télécharger
+          <input type="file" accept="video/*" style="display:none" multiple class="media-vid-inp">
+        </label>
+        <button class="media-upload-btn" style="flex:0;padding:5px 8px;font-size:9px;color:var(--t3)" type="button" onclick="this.closest('.media-upload-row').style.display='none';this.closest('.rtab-pane').querySelector('#media-lvl1').style.display='flex'">← Retour</button>
       </div>
     </div>
     ${hp?`<div class="rtab-pane" data-pane="prompts"><div class="prompt-list"></div><div class="prompt-add-row"><input class="prompt-title-inp" placeholder="Titre du prompt…"><textarea class="prompt-body-inp" rows="3" placeholder="Colle ton prompt ici…"></textarea><button class="rsubmit" style="align-self:flex-end">Ajouter</button></div></div>`:''}
@@ -1667,11 +1787,80 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
   zone.querySelector('.rsubmit').addEventListener('click',subNote);
   zone.querySelector('.rtarea').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();subNote();}});
 
-  // Médias — upload + coller (Ctrl+V)
+  // Médias — menu 2 niveaux Photo/Vidéo → Appareil/Télécharger
   renderMedia(zone.querySelector('.media-grid'),mediaRef);
-  const [imgInp,vidInp]=zone.querySelectorAll('.media-upload-btn input');
-  imgInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>compress(f,data=>{mediaRef.push({id:uid(),type:'image',data,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();if(gdToken&&rubriqueName)uploadImageToDrive(data,rubriqueName);}));e.target.value='';});
-  vidInp.addEventListener('change',e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=ev=>{mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});renderMedia(zone.querySelector('.media-grid'),mediaRef);markDirty();};r.readAsDataURL(f);});e.target.value='';});
+
+  // Niveau 1 : clic sur Photo → afficher lvl2-photo
+  zone.querySelectorAll('.media-type-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const type = btn.dataset.type;
+      const pane = zone.querySelector('[data-pane="media"]');
+      pane.querySelector('#media-lvl1').style.display='none';
+      pane.querySelector('#media-lvl2-photo').style.display = type==='photo'?'flex':'none';
+      pane.querySelector('#media-lvl2-video').style.display = type==='video'?'flex':'none';
+    });
+  });
+
+  // Niveau 2 : Appareil (caméra)
+  zone.querySelectorAll('.media-source-btn[data-source]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const isVideo = btn.dataset.source === 'camera-video';
+      const inp = document.createElement('input');
+      inp.type='file';
+      inp.accept = isVideo ? 'video/*' : 'image/*';
+      inp.capture = 'environment';
+      inp.style.display='none';
+      document.body.appendChild(inp);
+      inp.addEventListener('change', ()=>{
+        const f=inp.files[0]; if(!f){inp.remove();return;}
+        if(isVideo){
+          const r=new FileReader(); r.onload=ev=>{
+            mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});
+            renderMedia(zone.querySelector('.media-grid'),mediaRef);
+            markDirty(); toast('🎥 Vidéo ajoutée');
+          }; r.readAsDataURL(f);
+        } else {
+          compress(f,data=>{
+            mediaRef.push({id:uid(),type:'image',data,name:'photo-'+now()+'.jpg',date:now()});
+            renderMedia(zone.querySelector('.media-grid'),mediaRef);
+            markDirty(); if(gdToken&&rubriqueName) uploadImageToDrive(data,rubriqueName);
+            toast('📷 Photo ajoutée');
+          });
+        }
+        inp.remove();
+      });
+      inp.click();
+    });
+  });
+
+  // Niveau 2 : Upload image depuis bureau
+  const imgInp = zone.querySelector('.media-img-inp');
+  if(imgInp){
+    imgInp.addEventListener('change', e=>{
+      [...e.target.files].forEach(f=>compress(f,data=>{
+        mediaRef.push({id:uid(),type:'image',data,name:f.name,date:now()});
+        renderMedia(zone.querySelector('.media-grid'),mediaRef);
+        markDirty(); if(gdToken&&rubriqueName) uploadImageToDrive(data,rubriqueName);
+      }));
+      e.target.value='';
+    });
+  }
+
+  // Niveau 2 : Upload vidéo depuis bureau
+  const vidInp = zone.querySelector('.media-vid-inp');
+  if(vidInp){
+    vidInp.addEventListener('change', e=>{
+      [...e.target.files].forEach(f=>{
+        const r=new FileReader(); r.onload=ev=>{
+          mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});
+          renderMedia(zone.querySelector('.media-grid'),mediaRef); markDirty();
+        }; r.readAsDataURL(f);
+      });
+      e.target.value='';
+    });
+  }
 
   // Coller image depuis le presse-papier (Ctrl+V)
   zone.addEventListener('paste',e=>{
@@ -1761,6 +1950,140 @@ function renderPrompts(el,ref,btn){
 }
 
 /* ══════════════════════════════════
+   SUPPRESSION DE BLOCS
+══════════════════════════════════ */
+function deleteBloc(blocId, nom, e){
+  e && e.stopPropagation();
+  const card = document.getElementById(blocId);
+  if(!card) return;
+
+  // Confirmation
+  const confirmEl = document.createElement('div');
+  confirmEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center';
+  confirmEl.innerHTML = `<div style="background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:24px 28px;text-align:center;max-width:340px">
+    <div style="font-size:20px;margin-bottom:8px">🗑️</div>
+    <div style="font-size:13px;color:var(--t1);font-weight:700;margin-bottom:6px">Supprimer le bloc ?</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:16px"><strong>${nom}</strong><br>Tu pourras l'annuler pendant 5 secondes.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button id="bd-no"  style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px">Annuler</button>
+      <button id="bd-yes" style="background:var(--red);border:none;color:white;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px;font-weight:700">Supprimer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(confirmEl);
+
+  confirmEl.querySelector('#bd-no').onclick = ()=>document.body.removeChild(confirmEl);
+  confirmEl.querySelector('#bd-yes').onclick = ()=>{
+    document.body.removeChild(confirmEl);
+    const parent = card.parentNode;
+    const nextSibling = card.nextSibling;
+    card.style.display = 'none';
+    markDirty();
+    // Sauvegarder dans STATE si c'est un bloc personnalisé
+    if(STATE.customBlocs){
+      const idx = STATE.customBlocs.findIndex(b=>b.id===blocId);
+      if(idx>=0) STATE.customBlocs.splice(idx,1);
+    }
+    toastUndo(`Bloc "${nom}" supprimé`, ()=>{
+      card.style.display = '';
+      if(nextSibling) parent.insertBefore(card, nextSibling);
+      else parent.appendChild(card);
+      if(STATE.customBlocs){
+        // Restaurer le bloc custom si besoin
+      }
+      markDirty();
+    });
+  };
+}
+
+/* ══════════════════════════════════
+   MODALE AJOUT BLOC / ÉLÉMENT
+══════════════════════════════════ */
+let _addBlocType = 'libre';
+let _addBlocCol  = 'left';
+
+
+
+function selectAddType(el){
+  document.querySelectorAll('.add-bloc-choice').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  _addBlocType = el.dataset.type;
+
+  // Afficher/masquer le choix de colonne selon le type
+  const colSection = document.getElementById('add-bloc-col-section');
+  const inpLabel   = document.getElementById('add-bloc-inp-label');
+  const inpField   = document.getElementById('add-bloc-inp');
+
+  const labels = {
+    libre:       {col:true,  label:'Titre du bloc',         ph:'Ex: Retours tutrice, Feedback…'},
+    livrable:    {col:false, label:'Nom du livrable',        ph:'Ex: Module M3 — Quiz final'},
+    outil:       {col:false, label:'Nom de l\'outil',        ph:'Ex: DeepSeek, Runway, Midjourney…'},
+    difficulte:  {col:false, label:'Titre de la difficulté', ph:'Ex: Quota API épuisé'},
+    nn:          {col:false, label:'Non-négociable',         ph:'Ex: Chaque module doit être testé'},
+    competence:  {col:false, label:'Nom de la compétence',   ph:'Ex: Scénariser un module e-learning'},
+    note:        {col:false, label:'Ta note',                ph:'Ex: Idée, observation, réflexion…'},
+    memoire:     {col:false, label:'Titre de la rubrique',   ph:'Ex: Cadre théorique, Méthodologie…'},
+    remarque:    {col:false, label:'Ta remarque',            ph:'Ex: Observation de terrain…'},
+  };
+  const cfg = labels[_addBlocType] || labels.libre;
+  colSection.style.display = cfg.col ? 'block' : 'none';
+  inpLabel.textContent = cfg.label;
+  inpField.placeholder = cfg.ph;
+}
+
+function selectAddCol(el){
+  document.querySelectorAll('.add-bloc-col-btn').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  _addBlocCol = el.dataset.col;
+}
+
+
+
+
+
+
+// Entrée pour confirmer dans la modale
+document.getElementById('add-bloc-inp')?.addEventListener('keydown', e=>{ if(e.key==='Enter') confirmAddBloc(); });
+let _claudeNotifEl = null;
+
+function askClaudeBeforeAdd(context, proceedFn){
+  // Supprimer une notification existante
+  if(_claudeNotifEl){ _claudeNotifEl.remove(); _claudeNotifEl=null; }
+
+  const notif = document.createElement('div');
+  notif.className = 'claude-notif';
+  notif.innerHTML = `
+    <div class="claude-notif-title">🤖 Demander à Claude ?</div>
+    <div class="claude-notif-sub">Claude peut t'aider à créer du contenu pour : <strong>${context}</strong></div>
+    <div class="claude-notif-btns">
+      <button id="cn-yes" style="background:var(--red);border:none;color:white">🤖 Oui, Claude</button>
+      <button id="cn-no" style="background:var(--s2);border:1px solid var(--b2);color:var(--t2)">✏️ Moi-même</button>
+    </div>`;
+  document.body.appendChild(notif);
+  _claudeNotifEl = notif;
+
+  // Ouvrir le panneau assistant
+  notif.querySelector('#cn-yes').onclick = ()=>{
+    notif.remove(); _claudeNotifEl=null;
+    const panel = document.getElementById('assistant-panel');
+    panel.classList.add('open');
+    const inp = document.getElementById('asst-inp');
+    inp.value = `Aide-moi à ajouter du contenu dans : ${context}`;
+    inp.focus();
+  };
+
+  // Procéder normalement
+  notif.querySelector('#cn-no').onclick = ()=>{
+    notif.remove(); _claudeNotifEl=null;
+    proceedFn();
+  };
+
+  // Auto-fermer après 8 secondes et procéder normalement
+  setTimeout(()=>{
+    if(_claudeNotifEl===notif){ notif.remove(); _claudeNotifEl=null; proceedFn(); }
+  }, 8000);
+}
+
+/* ══════════════════════════════════
    BLOCS PERSONNALISÉS
 ══════════════════════════════════ */
 function addCustomBloc(col){
@@ -1803,6 +2126,7 @@ function renderCustomBloc(bloc, col){
       <span class="card-drag-handle">⠿</span>
       <span class="custom-bloc-emoji editable" title="Double-clic pour changer l'emoji">${bloc.emoji}</span>
       <span class="custom-bloc-titre editable" style="flex:1">${bloc.titre}</span>
+      <input type="color" class="bloc-color-picker" value="${bloc.color||'#4f9eff'}" title="Couleur du bloc" style="width:18px;height:18px;border:none;background:transparent;cursor:pointer;padding:0;border-radius:50%;margin-right:2px">
       <button class="delbtn" onclick="deleteCustomBloc('${bloc.id}',event)" style="margin-left:auto;font-size:11px">×</button>
       <span class="ctitle-collapse">▼</span>
     </div>
@@ -1821,6 +2145,19 @@ function renderCustomBloc(bloc, col){
   const emojiEl = card.querySelector('.custom-bloc-emoji');
   makeEditable(titreEl, ()=>bloc.titre, v=>{ bloc.titre=v; markDirty(); });
   makeEditable(emojiEl, ()=>bloc.emoji, v=>{ bloc.emoji=v; markDirty(); });
+  // Color picker
+  const colorPicker = card.querySelector('.bloc-color-picker');
+  if(colorPicker){
+    colorPicker.value = bloc.color||'#4f9eff';
+    card.style.borderLeftColor = bloc.color||'#4f9eff';
+    card.style.borderLeftWidth = '3px';
+    colorPicker.addEventListener('input', e=>{
+      bloc.color = e.target.value;
+      card.style.borderLeftColor = e.target.value;
+      card.style.background = e.target.value+'11';
+      markDirty();
+    });
+  }
 
   // Enter pour ajouter
   card.querySelector(`#inp-${bloc.id}`).addEventListener('keydown', e=>{
@@ -1874,29 +2211,496 @@ function renderCustomItems(bloc){
   if(!list) return;
   list.innerHTML = '';
   bloc.items.forEach(item=>{
+    // GARANTIR les 3 composants documentation sur chaque élément
+    if(!item.notes) item.notes=[];
+    if(!item.media) item.media=[];
+    if(!item.files) item.files=[];
+
     const el = document.createElement('div');
     el.className = 'custom-item';
-    el.innerHTML = `<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text" contenteditable="false">${item.text}</span><button class="custom-item-del">×</button>`;
-    makeEditable(el.querySelector('.custom-item-text'), ()=>item.text, v=>{ item.text=v; markDirty(); });
-    el.querySelector('.custom-item-del').onclick = ()=>{
-      softDelete(bloc.items, item, ()=>renderCustomItems(bloc), 'Élément supprimé');
-    };
+    el.style.flexDirection = 'column';
+    el.style.gap = '6px';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%';
+
+    // Bouton documentation — PRÉSENT SUR TOUS LES ÉLÉMENTS
+    const docBtn = document.createElement('button');
+    docBtn.className = `rbtn ${item.notes.length||item.media.length||item.files.length?'has':''}`;
+    docBtn.title = 'Remarques · Captures · Fichiers';
+    docBtn.textContent = '📝';
+
+    if(item.isJauge || item.isEval){
+      const label = item.isEval ? (item.text||'Compétence') : (item.text||'Avancement');
+      row.innerHTML = `<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text">${label}</span><span style="font-size:10px;color:var(--t3);margin-left:auto">${item.val||0}/10</span>`;
+      makeEditable(row.querySelector('.custom-item-text'), ()=>item.text||'', v=>{ item.text=v; markDirty(); });
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del">×</button>');
+      el.appendChild(row); el.appendChild(makeGauge(item,'val'));
+
+    } else if(item.isNote){
+      const ta = document.createElement('textarea');
+      ta.className='q-input'; ta.rows=3; ta.value=item.text||'';
+      ta.addEventListener('input',()=>{ item.text=ta.value; markDirty(); });
+      row.innerHTML=`<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span style="font-size:10px;color:var(--t3);flex:1">💬 Texte libre</span>`;
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del" style="margin-left:0">×</button>');
+      el.appendChild(row); el.appendChild(ta);
+
+    } else if(item.isStatus){
+      const statuses=['todo','cours','done'];
+      const labels={todo:'À faire',cours:'En cours',done:'Fait'};
+      const colors={todo:'var(--t3)',cours:'var(--gold)',done:'var(--grn)'};
+      row.innerHTML=`<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text">${item.text||'Tâche'}</span><span class="custom-status" style="font-size:10px;font-weight:700;color:${colors[item.status||'todo']};cursor:pointer;flex-shrink:0">${labels[item.status||'todo']}</span>`;
+      makeEditable(row.querySelector('.custom-item-text'), ()=>item.text||'', v=>{ item.text=v; markDirty(); });
+      row.querySelector('.custom-status').onclick=()=>{ const i=statuses.indexOf(item.status||'todo'); item.status=statuses[(i+1)%3]; row.querySelector('.custom-status').textContent=labels[item.status]; row.querySelector('.custom-status').style.color=colors[item.status]; markDirty(); };
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del">×</button>');
+      el.appendChild(row);
+
+    } else if(item.isTag){
+      row.innerHTML=`<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text">${item.text||'Élément'}</span><span class="otag ${item.tagcls||'to'}" style="cursor:pointer">${item.tag||'OK'}</span>`;
+      makeEditable(row.querySelector('.custom-item-text'), ()=>item.text||'', v=>{ item.text=v; markDirty(); });
+      row.querySelector('.otag').addEventListener('click',e=>{ e.stopPropagation(); makeTagMenu(item,row.querySelector('.otag')); });
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del">×</button>');
+      el.appendChild(row);
+
+    } else if(item.isPrompt){
+      const pa=document.createElement('textarea'); pa.className='q-input'; pa.rows=3; pa.placeholder='Prompt utilisé…'; pa.value=item.text||'';
+      pa.addEventListener('input',()=>{ item.text=pa.value; markDirty(); });
+      row.innerHTML=`<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span style="font-size:10px;color:var(--t3);flex:1">🎯 Prompt</span>`;
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del" style="margin-left:0">×</button>');
+      el.appendChild(row); el.appendChild(pa);
+
+    } else if(item.isDate){
+      row.innerHTML=`<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text">${item.text||'Date'}</span><input type="date" value="${item.dateVal||''}" style="background:var(--s1);border:1px solid var(--b2);color:var(--t1);border-radius:5px;padding:3px 6px;font-size:10px;margin-left:auto">`;
+      makeEditable(row.querySelector('.custom-item-text'), ()=>item.text||'', v=>{ item.text=v; markDirty(); });
+      row.querySelector('input[type=date]').addEventListener('change',e=>{ item.dateVal=e.target.value; markDirty(); });
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del">×</button>');
+      el.appendChild(row);
+
+    } else {
+      // Texte normal (défaut)
+      row.innerHTML=`<span class="drag-handle" style="font-size:10px;flex-shrink:0">⠿</span><span class="custom-item-text">${item.text||''}</span>`;
+      makeEditable(row.querySelector('.custom-item-text'), ()=>item.text||'', v=>{ item.text=v; markDirty(); });
+      row.appendChild(docBtn);
+      row.insertAdjacentHTML('beforeend','<button class="custom-item-del">×</button>');
+      el.appendChild(row);
+    }
+
+    // Zone documentation — MONTÉE SUR TOUS LES ÉLÉMENTS (Remarques + Captures Ctrl+V + Fichiers)
+    const rzone = document.createElement('div');
+    mountRzone(rzone, item.notes, item.media, null, item.files, docBtn, null, item.text||'Élément');
+    el.appendChild(rzone);
+
+    // Suppression
+    el.querySelector('.custom-item-del').onclick=()=>softDelete(bloc.items,item,()=>renderCustomItems(bloc),'Élément supprimé');
+
+    // Dupliquer
+    const dupBtn=document.createElement('button');
+    dupBtn.title='Dupliquer'; dupBtn.textContent='⧉';
+    dupBtn.style.cssText='background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0;';
+    dupBtn.onclick=()=>{ const copy={...JSON.parse(JSON.stringify(item)),id:uid(),notes:[],media:[],files:[]}; const idx=bloc.items.indexOf(item); bloc.items.splice(idx+1,0,copy); renderCustomItems(bloc); markDirty(); toast('⧉ Dupliqué'); };
+    const delBtn=el.querySelector('.custom-item-del');
+    if(delBtn) row.insertBefore(dupBtn,delBtn);
+
     list.appendChild(el);
   });
   makeDraggable(list, ()=>bloc.items, v=>{ bloc.items=v; }, ()=>renderCustomItems(bloc));
 }
 
-function addCustomItem(blocId){
-  const bloc = (STATE.customBlocs||[]).find(b=>b.id===blocId);
-  if(!bloc) return;
-  const inp = document.getElementById('inp-'+blocId);
-  const val = inp ? inp.value.trim() : '';
-  if(!val) return;
-  if(!bloc.items) bloc.items = [];
-  bloc.items.push({id:uid(), text:val});
-  inp.value = '';
-  renderCustomItems(bloc);
+// buildItemFromModel — chaque item a TOUJOURS notes+media+files
+function buildItemFromModel(modelId, label){
+  const base = {id:uid(), text:label||'Élément', notes:[], media:[], files:[]};
+  switch(modelId){
+    case 'livrable-model':   return {...base, isStatus:true, status:'todo', difficulty:0, prompts:[]};
+    case 'outil-model':      return {...base, isTag:true, tag:'OK', tagcls:'to', isJauge:true, val:0, acte:'', prompts:[]};
+    case 'difficulte-model': return {...base};
+    case 'nn-model':         return {...base};
+    case 'competence-model': return {...base, isEval:true, val:0};
+    case 'note-model':       return {...base, isNote:true};
+    case 'memoire-model':    return {...base, isNote:true};
+    case 'remarque-model':   return {...base, isNote:true};
+    case 'public-model':     return {...base};
+    default:                 return {...base};
+  }
+}
+
+function openAddBlocModal(){
+  const ta = document.getElementById('abm-prompt-main');
+  if(ta) ta.value = '';
+  document.getElementById('addBlocModal').classList.add('open');
+  setTimeout(()=>ta?.focus(), 100);
+}
+
+function abmInjectSug(txt){
+  const ta = document.getElementById('abm-prompt-main');
+  if(!ta) return;
+  ta.value = txt;
+  ta.focus();
+  const pos = txt.indexOf('« »');
+  if(pos >= 0) ta.setSelectionRange(pos+2, pos+2);
+  else ta.setSelectionRange(txt.length, txt.length);
+}
+
+function abmSendPrompt(){
+  const prompt = (document.getElementById('abm-prompt-main')?.value||'').trim();
+  if(!prompt){ toast('⚠️ Écris ce que tu veux ajouter','var(--orn)'); return; }
+  document.getElementById('addBlocModal').classList.remove('open');
+  const panel = document.getElementById('assistant-panel');
+  panel.classList.add('open');
+  const inp = document.getElementById('asst-inp');
+  inp.value = prompt;
+  inp.focus();
+  setTimeout(()=>asstSend(), 150);
+}
+
+function addBlocAskClaude(){
+  document.getElementById('addBlocModal').classList.remove('open');
+  const panel=document.getElementById('assistant-panel'); panel.classList.add('open');
+  const name=(document.getElementById('add-bloc-inp')?.value||'').trim();
+  const desc=(document.getElementById('abm-prompt-desc')?.value||'').trim();
+  document.getElementById('asst-inp').value=`Aide-moi à ${_abmType==='element'?'ajouter un élément':'créer un nouveau bloc'}${name?' nommé "'+name+'"':''}${desc?' avec : '+desc:''}`;
+  document.getElementById('asst-inp').focus();
+}
+
+document.getElementById('add-bloc-inp')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();confirmAddBloc();}});
+
+let _abmSelectPath = (p)=>{ _abmPath=p; };
+function abmSelectPath(p){ _abmPath=p; }
+
+/* ══════════════════════════════════
+   MENU UNIVERSEL D'AJOUT — LISTE COCHABLE
+   Accessible depuis TOUS les blocs
+══════════════════════════════════ */
+
+const ADD_COMPONENTS = [
+  {t:'text',    icon:'📝', label:'Élément texte',        sub:'Ligne libre + documentation (comme Livrables)'},
+  {t:'jauge',   icon:'📊', label:'Jauge 0-10',           sub:'Difficulté / avancement (comme Outils)'},
+  {t:'status',  icon:'✅', label:'Statut',               sub:'À faire / En cours / Fait (comme Livrables)'},
+  {t:'tag',     icon:'🏷️', label:'Tag / étiquette',      sub:'Pivot, OK, Bugue… (comme Outils)'},
+  {t:'prompt',  icon:'🎯', label:'Zone de prompt',       sub:'Archiver les prompts (comme Outils)'},
+  {t:'eval',    icon:'⭐', label:'Auto-évaluation 1-10', sub:'Note sur 10 (comme Compétences)'},
+  {t:'note',    icon:'💬', label:'Texte libre',          sub:'Zone multi-lignes (comme Notes)'},
+  {t:'capture', icon:'🖼️', label:'Captures / fichiers',  sub:'Upload ou coller Ctrl+V'},
+  {t:'date',    icon:'📅', label:'Date / période',       sub:'Champ de date'},
+  {t:'claude',  icon:'🤖', label:'Demander à Claude',    sub:'Claude génère le contenu automatiquement'},
+];
+
+// Dupliquer le dernier élément d'un bloc natif
+// Dupliquer le dernier élément du bloc — sans modale, immédiat
+function duplicateLastInBloc(blocType){
+  const fnMap = {
+    livrables: ()=>{
+      if(!STATE.livrables.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.livrables[STATE.livrables.length-1]));
+      src.id=uid(); src.notes=[]; src.media=[]; src.prompts=[]; src.files=[];
+      STATE.livrables.push(src); renderLivrables(); markDirty(); toast('⧉ Livrable dupliqué');
+    },
+    outils: ()=>{
+      if(!STATE.outils.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.outils[STATE.outils.length-1]));
+      src.id=uid(); src.notes=[]; src.media=[]; src.prompts=[]; src.files=[];
+      STATE.outils.push(src); renderOutils(); renderChain(); markDirty(); toast('⧉ Outil dupliqué');
+    },
+    diffs: ()=>{
+      if(!STATE.diffs.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.diffs[STATE.diffs.length-1]));
+      src.id=uid(); src.notes=[]; src.media=[]; src.files=[];
+      STATE.diffs.push(src); renderDiffs(); markDirty(); toast('⧉ Difficulté dupliquée');
+    },
+    nns: ()=>{
+      if(!STATE.nns.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.nns[STATE.nns.length-1]));
+      src.id=uid(); src.notes=[]; src.media=[]; src.files=[];
+      STATE.nns.push(src); renderNNs(); markDirty(); toast('⧉ Non-négociable dupliqué');
+    },
+    competences: ()=>{
+      if(!STATE.competences||!STATE.competences.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.competences[STATE.competences.length-1]));
+      src.id=uid(); src.notes=[]; src.media=[]; src.files=[];
+      STATE.competences.push(src); renderComps(); markDirty(); toast('⧉ Compétence dupliquée');
+    },
+    notes: ()=>{
+      if(!STATE.notes||!STATE.notes.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.notes[STATE.notes.length-1]));
+      src.id=uid();
+      STATE.notes.push(src); renderNotesList(); markDirty(); toast('⧉ Note dupliquée');
+    },
+    memoire: ()=>{
+      const editables=(STATE.memoire||[]).filter(r=>!r.fixed);
+      if(!editables.length){ return toast('Aucune rubrique dupliquable','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(editables[editables.length-1]));
+      src.id=uid(); src.fixed=false; src.notes=[]; src.media=[];
+      STATE.memoire.push(src); renderMemoire(); markDirty(); toast('⧉ Rubrique dupliquée');
+    },
+    public: ()=>{
+      if(!STATE.publicCible||!STATE.publicCible.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.publicCible[STATE.publicCible.length-1]));
+      src.id='pc'+Date.now();
+      STATE.publicCible.push(src); renderPC(); markDirty(); toast('⧉ Étiquette dupliquée');
+    },
+    remarques: ()=>{
+      if(!STATE.globals||!STATE.globals.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.globals[STATE.globals.length-1]));
+      src.id=uid();
+      STATE.globals.push(src); renderGlobals(); markDirty(); toast('⧉ Remarque dupliquée');
+    },
+    questionnaire: ()=>{
+      if(!STATE.customQuestions||!STATE.customQuestions.length){ return toast('Aucun élément à dupliquer','var(--orn)'); }
+      const src=JSON.parse(JSON.stringify(STATE.customQuestions[STATE.customQuestions.length-1]));
+      src.id='cq_'+uid();
+      STATE.customQuestions.push(src); renderQuestionnaire(); markDirty(); toast('⧉ Question dupliquée');
+    },
+  };
+  const fn = fnMap[blocType];
+  if(fn) fn();
+  else openUniversalAddMenu(blocType, null);
+}
+
+const BLOC_ADD_FNS = {
+  livrables:    ()=>{const lv={id:uid(),name:'Nouveau livrable',det:'',status:'todo',difficulty:0,notes:[],media:[],prompts:[],files:[]};STATE.livrables.push(lv);renderLivrables();markDirty();},
+  outils:       ()=>{const ot={id:uid(),cls:'ook',svgKey:null,name:'Nouvel outil',role:'',tag:'OK',tagcls:'to',difficulty:0,notes:[],media:[],prompts:[],files:[],acte:''};STATE.outils.push(ot);renderOutils();renderChain();markDirty();},
+  diffs:        ()=>{const d={id:uid(),ico:'⚠️',title:'Nouvelle difficulté',sub:'',notes:[],media:[],files:[]};STATE.diffs.push(d);renderDiffs();markDirty();},
+  nns:          ()=>{const n={id:uid(),num:STATE.nns.length+1,txt:'Non-négociable',notes:[],media:[],files:[]};STATE.nns.push(n);renderNNs();markDirty();},
+  competences:  ()=>{if(!STATE.competences)STATE.competences=[];const c={id:uid(),nom:'Nouvelle compétence',eval:0,notes:[],media:[],files:[]};STATE.competences.push(c);renderComps();markDirty();},
+  notes:        ()=>{if(!STATE.notes)STATE.notes=[];STATE.notes.push({id:uid(),text:'Nouvelle note',date:now()});renderNotesList();markDirty();},
+  memoire:      ()=>{const r={id:uid(),icon:'📝',title:'Nouvelle rubrique',text:'',files:[],fixed:false,notes:[],media:[]};STATE.memoire.push(r);renderMemoire();markDirty();},
+  public:       ()=>{if(!STATE.publicCible)STATE.publicCible=[];const p={id:'pc'+Date.now(),titre:'Nouvelle étiquette',texte:''};STATE.publicCible.push(p);renderPC();markDirty();},
+  remarques:    ()=>{STATE.globals.push({id:uid(),text:'Nouvelle remarque',date:now()});renderGlobals();markDirty();},
+  questionnaire:()=>{if(!STATE.customQuestions)STATE.customQuestions=[];STATE.customQuestions.push({id:'cq_'+uid(),label:'Nouvelle question',sublabel:'',type:'textarea'});renderQuestionnaire();markDirty();},
+};
+
+function openUniversalAddMenu(blocType, customBlocId){
+  document.querySelectorAll('.univ-add-overlay').forEach(m=>m.remove());
+  const blocName = {
+    livrables:'Livrables', outils:'Outils', diffs:'Difficultés',
+    nns:'Non-Négociables', competences:'Compétences', notes:'Notes',
+    memoire:'Mémoire', public:'Public Cible', remarques:'Remarques', questionnaire:'Questionnaire',
+  }[blocType] || 'ce bloc';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'univ-add-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:10003;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  overlay.innerHTML = `
+    <div style="background:var(--s1);border:1px solid var(--b2);border-radius:12px;width:100%;max-width:460px;overflow:hidden;position:relative">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--b1)">
+        <div style="font-family:Syne,sans-serif;font-size:13px;font-weight:700;color:var(--t1)">＋ Que veux-tu ajouter ?</div>
+        <button id="uam-x" style="position:absolute;top:10px;right:12px;background:transparent;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:14px 18px;display:flex;flex-direction:column;gap:8px">
+        <div id="uam-path-a" style="padding:12px 14px;background:rgba(74,139,224,.08);border:1px solid var(--blue);border-radius:9px;cursor:pointer">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px">📌 À l'intérieur de <span style="color:var(--red)">${blocName}</span></div>
+          <div style="font-size:10px;color:var(--t3)">L'élément s'ajoute en bas du bloc actuel</div>
+        </div>
+        <div id="uam-path-b" style="padding:12px 14px;background:var(--s2);border:1px solid var(--b2);border-radius:9px;cursor:pointer">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px">📋 Nouveau bloc</div>
+          <div style="font-size:10px;color:var(--t3)">Crée un nouveau bloc indépendant</div>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:5px" id="uam-lbl-name">Nom de l'élément</div>
+          <input class="addinp" id="uam-name" placeholder="Ex: Module vidéo, Feedback tutrice…" style="width:100%;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:5px" id="uam-lbl-res">Il ressemble à quoi ? <span style="font-weight:400;text-transform:none">(écris librement)</span></div>
+          <input class="addinp" id="uam-resemble" placeholder="Ex: livrable, outil, compétence, note…" style="width:100%;box-sizing:border-box">
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+            ${["livrable","outil","difficulté","compétence","note","mémoire","remarque","bloc libre"].map(s=>
+              `<span onclick="document.getElementById('uam-resemble').value='${s}'" style="background:var(--s2);border:1px solid var(--b2);color:var(--t3);border-radius:12px;padding:2px 9px;font-size:9px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b2)'">${s}</span>`
+            ).join('')}
+          </div>
+        </div>
+        <div id="uam-claude-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(232,83,58,.05);border:1px solid rgba(232,83,58,.15);border-radius:7px;cursor:pointer">
+          <span>🤖</span><div style="font-size:10px;font-weight:700;color:var(--t1)">Demander à Claude</div><span style="margin-left:auto;color:var(--t3);font-size:10px">→</span>
+        </div>
+      </div>
+      <div style="padding:10px 18px;border-top:1px solid var(--b1);display:flex;gap:8px;justify-content:flex-end">
+        <button id="uam-cancel" class="sbtn">Annuler</button>
+        <button id="uam-ok" class="sbtn pri">＋ Ajouter</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  let _path = 'a';
+
+  function selectPath(p){
+    _path=p;
+    const isA=p==='a';
+    overlay.querySelector('#uam-path-a').style.cssText=`padding:12px 14px;background:${isA?'rgba(74,139,224,.08)':'var(--s2)'};border:1px solid ${isA?'var(--blue)':'var(--b2)'};border-radius:9px;cursor:pointer`;
+    overlay.querySelector('#uam-path-b').style.cssText=`padding:12px 14px;background:${!isA?'rgba(74,139,224,.08)':'var(--s2)'};border:1px solid ${!isA?'var(--blue)':'var(--b2)'};border-radius:9px;cursor:pointer`;
+    overlay.querySelector('#uam-lbl-name').textContent = isA ? "Nom de l'élément" : "Titre du nouveau bloc";
+    overlay.querySelector('#uam-resemble').placeholder = isA ? "Ex: livrable, outil, compétence…" : "Ex: livrables, outils, compétences…";
+  }
+  overlay.querySelector('#uam-path-a').onclick=()=>selectPath('a');
+  overlay.querySelector('#uam-path-b').onclick=()=>selectPath('b');
+
+  const close=()=>overlay.remove();
+  overlay.querySelector('#uam-x').onclick=close;
+  overlay.querySelector('#uam-cancel').onclick=close;
+
+  overlay.querySelector('#uam-claude-row').onclick=()=>{
+    close();
+    const panel=document.getElementById('assistant-panel'); panel.classList.add('open');
+    const name=overlay.querySelector('#uam-name')?.value.trim()||'';
+    document.getElementById('asst-inp').value=`Aide-moi à ajouter ${_path==='b'?'un nouveau bloc':'un élément'} dans "${blocName}"${name?' nommé "'+name+'"':''}`;
+    document.getElementById('asst-inp').focus();
+  };
+
+  overlay.querySelector('#uam-ok').onclick=()=>{
+    const name=overlay.querySelector('#uam-name').value.trim();
+    const resemble=overlay.querySelector('#uam-resemble').value.trim().toLowerCase();
+    close();
+    const modele=detectModele(resemble);
+    if(_path==='b'){
+      createBlocFromModele(modele, name||'Nouveau bloc', 'left');
+    } else {
+      addItemFromModele(modele, name||'Nouvel élément', blocType, customBlocId);
+    }
+  };
+
+  overlay.querySelector('#uam-name').addEventListener('keydown',e=>{if(e.key==='Enter')overlay.querySelector('#uam-ok').click();});
+  setTimeout(()=>overlay.querySelector('#uam-name')?.focus(),100);
+}
+
+function detectModele(txt){
+  const t=(txt||'').toLowerCase();
+  if(t.includes('livr'))  return 'livrable';
+  if(t.includes('outil')) return 'outil';
+  if(t.includes('diff'))  return 'difficulte';
+  if(t.includes('non')||t.includes('négoc')||t.includes('negoc')) return 'nn';
+  if(t.includes('compét')||t.includes('compet')||t.includes('savoir')) return 'competence';
+  if(t.includes('note'))  return 'note';
+  if(t.includes('mémoir')||t.includes('memoir')||t.includes('rubr')) return 'memoire';
+  if(t.includes('remarqu')) return 'remarque';
+  if(t.includes('public')||t.includes('cible')) return 'public';
+  return 'libre';
+}
+
+function createBlocFromModele(modele, titre, col){
+  if(modele==='libre'){ addCustomBloc(col,titre); return; }
+  const icons={livrable:'📦',outil:'🛠️',difficulte:'🔴',nn:'🔒',competence:'🎓',note:'🗒️',memoire:'📖',remarque:'📝',public:'👥'};
+  const bloc={id:'custom-'+uid(), titre, emoji:icons[modele]||'📋', items:[], col};
+  const item=buildItemFromModel(modele+'-model', titre);
+  if(item){ item.text=titre; bloc.items=[item]; }
+  if(!STATE.customBlocs) STATE.customBlocs=[];
+  STATE.customBlocs.push(bloc);
+  renderCustomBloc(bloc, col);
   markDirty();
+  toast(`📋 Bloc "${titre}" créé`);
+}
+
+function addItemFromModele(modele, name, blocType, customBlocId){
+  const modelId=modele+'-model';
+  if(customBlocId){
+    const bloc=(STATE.customBlocs||[]).find(b=>b.id===customBlocId);
+    if(!bloc) return;
+    if(!bloc.items) bloc.items=[];
+    const item=buildItemFromModel(modelId,name);
+    if(item){ bloc.items.push(item); renderCustomItems(bloc); markDirty(); toast(`✅ "${name}" ajouté`); }
+  } else {
+    const fn=BLOC_ADD_FNS_NAMED[modelId]||BLOC_ADD_FNS_NAMED['livrable-model'];
+    if(fn){ fn(name); markDirty(); toast(`✅ "${name}" ajouté`); }
+  }
+}
+
+function addCustomItem(blocId){
+  openUniversalAddMenu(null, blocId);
+}
+
+function openAddItemAssistant(blocId, bloc){
+  document.querySelectorAll('.aim-overlay').forEach(m=>m.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = 'aim-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  overlay.innerHTML = `
+    <div style="background:var(--s1);border:1px solid var(--b2);border-radius:12px;width:100%;max-width:440px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-family:Syne,sans-serif;font-size:12px;font-weight:700;color:var(--t1)">＋ Ajouter dans : <span style="color:var(--red)">${bloc.emoji} ${bloc.titre}</span></div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px">Que veux-tu ajouter ?</div>
+        </div>
+        <button id="aim-x" style="background:transparent;border:none;color:var(--t3);font-size:18px;cursor:pointer;position:absolute;top:10px;right:12px">✕</button>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Coche les éléments que tu veux :</div>
+        <div style="display:flex;flex-direction:column;gap:5px" id="aim-checklist">
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="text" checked> <span style="font-size:16px">📝</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Élément texte</div><div style="font-size:10px;color:var(--t3)">Ligne libre + documentation 📎</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="jauge"> <span style="font-size:16px">📊</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Jauge 0-10</div><div style="font-size:10px;color:var(--t3)">Auto-évaluation ou avancement</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="note"> <span style="font-size:16px">💬</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Zone de texte libre</div><div style="font-size:10px;color:var(--t3)">Bloc multi-lignes</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="status"> <span style="font-size:16px">✅</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Statut (case à cocher)</div><div style="font-size:10px;color:var(--t3)">À faire / En cours / Fait</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="tag"> <span style="font-size:16px">🏷️</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Tag / étiquette</div><div style="font-size:10px;color:var(--t3)">Comme les tags des Outils</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="prompt"> <span style="font-size:16px">🎯</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Zone de prompt</div><div style="font-size:10px;color:var(--t3)">Archiver les prompts utilisés</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="eval"> <span style="font-size:16px">⭐</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Auto-évaluation 1-10</div><div style="font-size:10px;color:var(--t3)">Comme dans Compétences</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="date"> <span style="font-size:16px">📅</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Date / période</div><div style="font-size:10px;color:var(--t3)">Champ de date</div></div></label>
+          <label class="aim-cb-row"><input type="checkbox" class="aim-cb" data-t="capture"> <span style="font-size:16px">🖼️</span> <div><div style="font-size:11px;font-weight:600;color:var(--t1)">Captures / fichiers</div><div style="font-size:10px;color:var(--t3)">Upload ou coller (Ctrl+V)</div></div></label>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(232,83,58,.05);border:1px solid rgba(232,83,58,.15);border-radius:7px;cursor:pointer" id="aim-claude-btn">
+          <span style="font-size:14px">🤖</span>
+          <div style="font-size:10px;font-weight:700;color:var(--t1)">Demander à Claude de générer le contenu</div>
+          <span style="margin-left:auto;font-size:10px;color:var(--t3)">→</span>
+        </div>
+
+        <div id="aim-inp-row" style="display:flex;gap:6px;margin-top:2px">
+          <input class="addinp" id="aim-inp" placeholder="Nom de l'élément…" style="flex:1">
+        </div>
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--b1);display:flex;gap:8px;justify-content:flex-end">
+        <button id="aim-cancel" class="sbtn">Annuler</button>
+        <button id="aim-ok" class="sbtn pri">＋ Ajouter</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  let _aimType = 'text';
+
+  // Pas de sélection single — on coche plusieurs
+
+  const close = ()=>overlay.remove();
+  overlay.querySelector('#aim-x').onclick = close;
+  overlay.querySelector('#aim-cancel').onclick = close;
+
+  // Claude
+  overlay.querySelector('#aim-claude-btn').onclick = ()=>{
+    close();
+    const panel = document.getElementById('assistant-panel');
+    panel.classList.add('open');
+    const inp = document.getElementById('asst-inp');
+    inp.value = `Aide-moi à ajouter du contenu dans le bloc "${bloc.titre}"`;
+    inp.focus();
+  };
+
+  // Valider — ajouter tous les éléments cochés
+  overlay.querySelector('#aim-ok').onclick = ()=>{
+    const val = document.getElementById('aim-inp')?.value.trim() || '';
+    const checked = [...overlay.querySelectorAll('.aim-cb:checked')].map(c=>c.dataset.t);
+    close();
+    if(!checked.length) return;
+    if(!bloc.items) bloc.items=[];
+    checked.forEach(type=>{
+      if(type==='text')    bloc.items.push({id:uid(), text:val||'Élément', notes:[], media:[], files:[]});
+      if(type==='jauge')   bloc.items.push({id:uid(), text:'Avancement', isJauge:true, val:0, notes:[], media:[], files:[]});
+      if(type==='note')    bloc.items.push({id:uid(), text:'', isNote:true, notes:[], media:[], files:[]});
+      if(type==='status')  bloc.items.push({id:uid(), text:val||'Tâche', isStatus:true, status:'todo', notes:[], media:[], files:[]});
+      if(type==='tag')     bloc.items.push({id:uid(), text:val||'Élément', isTag:true, tag:'OK', tagcls:'to', notes:[], media:[], files:[]});
+      if(type==='prompt')  bloc.items.push({id:uid(), text:'', isPrompt:true, notes:[], media:[], files:[]});
+      if(type==='eval')    bloc.items.push({id:uid(), text:val||'Compétence', isEval:true, val:0, notes:[], media:[], files:[]});
+      if(type==='date')    bloc.items.push({id:uid(), text:'', isDate:true, notes:[], media:[], files:[]});
+      if(type==='capture') bloc.items.push({id:uid(), text:'Captures', isCapture:true, notes:[], media:[], files:[]});
+    });
+    renderCustomItems(bloc);
+    markDirty();
+    toast(`✅ ${checked.length} élément(s) ajouté(s)`);
+  };
+
+  setTimeout(()=>overlay.querySelector('#aim-inp')?.focus(), 100);
+  overlay.querySelector('#aim-inp')?.addEventListener('keydown', e=>{ if(e.key==='Enter') overlay.querySelector('#aim-ok').click(); });
 }
 
 function deleteCustomBloc(blocId, e){
@@ -2212,7 +3016,7 @@ function renderDiffs(){
 function makeDiff(df){
   const wrap=document.createElement('div');wrap.className='dwrap';wrap.dataset.id=df.id;
   const row=document.createElement('div');row.className='drow';
-  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><span class="dico">${df.ico}</span><div class="dtext"><strong>${df.title}</strong><span>${df.sub}</span></div><button class="rbtn ${df.notes&&df.notes.length?'has':''}">📝</button><button class="delbtn">×</button>`;
+  row.innerHTML=`<span class="drag-handle" title="Déplacer">⠿</span><span class="dico">${df.ico}</span><div class="dtext" style="flex:1;min-width:0"><strong>${df.title}</strong><span>${df.sub}</span></div><div style="display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto"><button class="rbtn ${df.notes&&df.notes.length?'has':''}" >📝</button><button class="delbtn">×</button></div>`;
   wrap.appendChild(row);
   mountRzone(wrap,df.notes,df.media,null,df.files,row.querySelector('.rbtn'),null,df.title);
   makeEditable(row.querySelector('.dtext strong'), ()=>df.title, v=>{ df.title=v; });
@@ -2280,8 +3084,7 @@ function makeMemRub(r){
   if(!r.fixed){hdr.querySelector('.mem-delbtn').addEventListener('click',e=>{e.stopPropagation();softDelete(STATE.memoire,r,renderMemoire,`"${r.title}" supprimé`);});}
   return wrap;
 }
-function addMemRub(){const val=document.getElementById('memInp').value.trim();if(!val)return;const r={id:uid(),icon:'📝',title:val,text:'',files:[],fixed:false};STATE.memoire.push(r);const list=document.getElementById('memoireList');const el=makeMemRub(r);list.appendChild(el);el.querySelector('.mem-body').classList.add('open');el.querySelector('.mem-toggle').classList.add('open');document.getElementById('memInp').value='';markDirty();}
-document.getElementById('memInp').addEventListener('keydown',e=>{if(e.key==='Enter')addMemRub();});
+document.getElementById('memInp').addEventListener('keydown',e=>{if(e.key==='Enter')duplicateLastInBloc('memoire');});
 
 /* ══════════════════════════════════
    REMARQUES GLOBALES
@@ -2315,8 +3118,29 @@ function renderAll(){
   renderChain(); renderLivrables(); renderOutils(); renderDiffs(); renderNNs(); renderGlobals(); renderMemoire(); renderPC(); renderNotesList(); renderComps(); renderKpis(); renderQuestionnaire(); renderAllCustomBlocs();
   if(!STATE.autoeval)STATE.autoeval={livrer:0,apprendre:0,convaincre:0};
   [{id:'g-livrer',k:'livrer'},{id:'g-apprendre',k:'apprendre'},{id:'g-convaincre',k:'convaincre'}].forEach(({id,k})=>{
-    const el=document.getElementById(id);if(el){el.innerHTML='';el.appendChild(makeGauge(STATE.autoeval,k,'Avancement'));}
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML='';
+    el.appendChild(makeGauge(STATE.autoeval, k, 'Auto-évaluation'));
   });
+  // Re-render les jauges quand le bloc Triple Priorité est ouvert
+  const cardPriorite = document.getElementById('card-priorite');
+  if(cardPriorite){
+    const ct = cardPriorite.querySelector('.ctitle.collapsible');
+    if(ct && !ct._gaugeListener){
+      ct._gaugeListener = true;
+      ct.addEventListener('click', ()=>{
+        setTimeout(()=>{
+          if(!cardPriorite.classList.contains('collapsed')){
+            [{id:'g-livrer',k:'livrer'},{id:'g-apprendre',k:'apprendre'},{id:'g-convaincre',k:'convaincre'}].forEach(({id,k})=>{
+              const el=document.getElementById(id);
+              if(el){ el.innerHTML=''; el.appendChild(makeGauge(STATE.autoeval,k,'Auto-évaluation')); }
+            });
+          }
+        }, 50);
+      });
+    }
+  }
   updateSBar();
 }
 
@@ -2456,89 +3280,129 @@ const QUESTIONS = [
 function renderQuestionnaire(){
   const list = document.getElementById('questionnaire-list'); if(!list) return;
   if(!STATE.questionnaire) STATE.questionnaire = {};
+  if(!STATE.customQuestions) STATE.customQuestions = [];
   list.innerHTML = '';
-  let currentSection = null;
 
+  // Questions prédéfinies
   QUESTIONS.forEach(q=>{
     if(q.section){
       const sec = document.createElement('div');
       sec.className = 'q-section-title';
       sec.textContent = q.section;
       list.appendChild(sec);
-      currentSection = q.section;
     }
     if(!q.id) return;
-
-    const item = document.createElement('div');
-    item.className = 'q-item';
-
-    const label = document.createElement('div');
-    label.className = 'q-label';
-    label.textContent = q.label;
-    item.appendChild(label);
-
-    if(q.sublabel){
-      const sub = document.createElement('div');
-      sub.className = 'q-sublabel';
-      sub.textContent = q.sublabel;
-      item.appendChild(sub);
-    }
-
-    if(q.type === 'textarea'){
-      const inp = document.createElement('textarea');
-      inp.className = 'q-input';
-      inp.rows = 4;
-      inp.placeholder = 'Ta réponse…';
-      inp.value = STATE.questionnaire[q.id] || '';
-      inp.addEventListener('input', ()=>{ STATE.questionnaire[q.id] = inp.value; markDirty(); });
-      item.appendChild(inp);
-
-    } else if(q.type === 'scale'){
-      const scale = document.createElement('div');
-      scale.className = 'q-scale';
-      (q.options||['1','2','3','4','5']).forEach(opt=>{
-        const btn = document.createElement('button');
-        btn.className = 'q-scale-btn' + (STATE.questionnaire[q.id]===opt ? ' selected' : '');
-        btn.textContent = opt;
-        btn.onclick = ()=>{
-          STATE.questionnaire[q.id] = opt;
-          scale.querySelectorAll('.q-scale-btn').forEach(b=>b.classList.remove('selected'));
-          btn.classList.add('selected');
-          markDirty();
-        };
-        scale.appendChild(btn);
-      });
-      item.appendChild(scale);
-
-    } else if(q.type === 'bloom'){
-      const bloom = document.createElement('div');
-      bloom.className = 'q-bloom';
-      [
-        {level:'1', label:'1 — Mémoriser'},
-        {level:'2', label:'2 — Comprendre'},
-        {level:'3', label:'3 — Appliquer'},
-        {level:'4', label:'4 — Analyser'},
-        {level:'5', label:'5 — Évaluer'},
-        {level:'6', label:'6 — Créer'},
-      ].forEach(opt=>{
-        const btn = document.createElement('button');
-        btn.className = 'q-bloom-btn' + (STATE.questionnaire[q.id]===opt.level ? ' selected' : '');
-        btn.dataset.level = opt.level;
-        btn.textContent = opt.label;
-        btn.onclick = ()=>{
-          STATE.questionnaire[q.id] = opt.level;
-          bloom.querySelectorAll('.q-bloom-btn').forEach(b=>b.classList.remove('selected'));
-          btn.classList.add('selected');
-          markDirty();
-        };
-        bloom.appendChild(btn);
-      });
-      item.appendChild(bloom);
-    }
-
-    list.appendChild(item);
+    list.appendChild(makeQItem(q, false));
   });
+
+  // Questions personnalisées ajoutées par Karima
+  if(STATE.customQuestions.length){
+    const sec = document.createElement('div');
+    sec.className = 'q-section-title';
+    sec.textContent = '✏️ Mes questions personnalisées';
+    list.appendChild(sec);
+    STATE.customQuestions.forEach(q=>list.appendChild(makeQItem(q, true)));
+  }
 }
+
+function makeQItem(q, deletable){
+  const item = document.createElement('div');
+  item.className = 'q-item';
+  item.style.position = 'relative';
+
+  // Bouton supprimer (sur toutes les questions si deletable, sinon jamais)
+  if(deletable){
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delbtn';
+    delBtn.style.cssText = 'position:absolute;top:8px;right:8px;';
+    delBtn.textContent = '×';
+    delBtn.onclick = ()=>{
+      softDelete(STATE.customQuestions, q, renderQuestionnaire, `Question "${q.label.substring(0,30)}…" supprimée`);
+    };
+    item.appendChild(delBtn);
+  }
+
+  const label = document.createElement('div');
+  label.className = 'q-label';
+  label.style.paddingRight = deletable ? '24px' : '0';
+  label.textContent = q.label;
+  if(deletable) makeEditable(label, ()=>q.label, v=>{ q.label=v; markDirty(); });
+  item.appendChild(label);
+
+  if(q.sublabel){
+    const sub = document.createElement('div');
+    sub.className = 'q-sublabel';
+    sub.textContent = q.sublabel;
+    item.appendChild(sub);
+  }
+
+  // Type textarea (par défaut pour les questions custom)
+  if(!q.type || q.type === 'textarea'){
+    const inp = document.createElement('textarea');
+    inp.className = 'q-input';
+    inp.rows = 4;
+    inp.placeholder = 'Ta réponse…';
+    inp.value = STATE.questionnaire[q.id] || '';
+    inp.addEventListener('input', ()=>{ STATE.questionnaire[q.id] = inp.value; markDirty(); });
+    item.appendChild(inp);
+
+  } else if(q.type === 'scale'){
+    const scale = document.createElement('div');
+    scale.className = 'q-scale';
+    (q.options||['1','2','3','4','5']).forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'q-scale-btn' + (STATE.questionnaire[q.id]===opt ? ' selected' : '');
+      btn.textContent = opt;
+      btn.onclick = ()=>{ STATE.questionnaire[q.id]=opt; scale.querySelectorAll('.q-scale-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); markDirty(); };
+      scale.appendChild(btn);
+    });
+    item.appendChild(scale);
+
+  } else if(q.type === 'bloom'){
+    const bloom = document.createElement('div');
+    bloom.className = 'q-bloom';
+    [{level:'1',label:'1 — Mémoriser'},{level:'2',label:'2 — Comprendre'},{level:'3',label:'3 — Appliquer'},{level:'4',label:'4 — Analyser'},{level:'5',label:'5 — Évaluer'},{level:'6',label:'6 — Créer'}].forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'q-bloom-btn'+(STATE.questionnaire[q.id]===opt.level?' selected':'');
+      btn.dataset.level=opt.level; btn.textContent=opt.label;
+      btn.onclick=()=>{ STATE.questionnaire[q.id]=opt.level; bloom.querySelectorAll('.q-bloom-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); markDirty(); };
+      bloom.appendChild(btn);
+    });
+    item.appendChild(bloom);
+  }
+
+  // Zone documentation pour justifier la réponse
+  if(!q.notes) q.notes=[];
+  if(!q.media) q.media=[];
+  if(!q.files) q.files=[];
+  const docBtn = document.createElement('button');
+  docBtn.className = `rbtn ${q.notes.length||q.media.length||q.files.length?'has':''}`;
+  docBtn.style.cssText = 'margin-top:4px;font-size:10px;align-self:flex-start';
+  docBtn.title = 'Ajouter une justification, capture ou fichier';
+  docBtn.textContent = '📎 Justifier / documenter';
+  item.appendChild(docBtn);
+  const docZone = document.createElement('div');
+  docZone.style.marginTop = '6px';
+  mountRzone(docZone, q.notes, q.media, null, q.files, docBtn, null, q.label?.substring(0,40)||'Question');
+  item.appendChild(docZone);
+
+  return item;
+}
+
+function addCustomQuestion(){
+  const inp = document.getElementById('q-new-inp');
+  const val = inp ? inp.value.trim() : '';
+  if(!val) return;
+  if(!STATE.customQuestions) STATE.customQuestions = [];
+  const q = { id:'cq_'+uid(), label:val, sublabel:'', type:'textarea' };
+  STATE.customQuestions.push(q);
+  inp.value = '';
+  renderQuestionnaire();
+  markDirty();
+  toast('✅ Question ajoutée');
+}
+
+document.getElementById('q-new-inp')?.addEventListener('keydown', e=>{ if(e.key==='Enter') addCustomQuestion(); });
 
 function saveQuestionnaire(){
   saveAll();
@@ -2547,121 +3411,112 @@ function saveQuestionnaire(){
 
 let _crText='';
 function buildCRPrompt(){
-  const lv = STATE.livrables.map(l=>`- ${l.name} [${l.status==='done'?'✓ Fait':l.status==='cours'?'⏳ En cours':'⬜ À faire'}] : ${l.det}${l.notes&&l.notes.length?' | Notes: '+l.notes.map(n=>n.text).join(' / '):''}`).join('\n');
-  const ot = STATE.outils.map(o=>`- ${o.name} [${o.tag}] : ${o.role}`).join('\n');
-  const df = STATE.diffs.map(d=>`- ${d.title} : ${d.sub}${d.notes&&d.notes.length?' | '+d.notes.map(n=>n.text).join(' / '):''}`).join('\n');
-  const nn = STATE.nns.map(n=>`- ${n.txt}`).join('\n');
+  // Livrables avec notes, prompts, captures
+  const lv = STATE.livrables.map(l=>{
+    let txt = `- ${l.name} [${l.status==='done'?'✓ Fait':l.status==='cours'?'⏳ En cours':'⬜ À faire'}] : ${l.det}`;
+    if(l.notes&&l.notes.length) txt += `\n  Remarques: ${l.notes.map(n=>n.text).join(' | ')}`;
+    if(l.prompts&&l.prompts.length) txt += `\n  Prompts: ${l.prompts.map(p=>(p.title?p.title+': ':'')+p.text).join(' | ')}`;
+    if(l.media&&l.media.length) txt += `\n  Captures (${l.media.length}): ${l.media.map(m=>m.name||'capture').join(', ')}`;
+    return txt;
+  }).join('\n');
+
+  // Outils avec actes narratifs, notes, prompts
+  const ot = STATE.outils.map(o=>{
+    let txt = `- ${o.name} [${o.tag}] : ${o.role}`;
+    if(o.acte) txt += `\n  Acte narratif: ${o.acte}`;
+    if(o.notes&&o.notes.length) txt += `\n  Notes: ${o.notes.map(n=>n.text).join(' | ')}`;
+    if(o.prompts&&o.prompts.length) txt += `\n  Prompts: ${o.prompts.map(p=>p.text).join(' | ')}`;
+    if(o.media&&o.media.length) txt += `\n  Captures (${o.media.length})`;
+    return txt;
+  }).join('\n');
+
+  const df = STATE.diffs.map(d=>{
+    let txt = `- ${d.title} : ${d.sub}`;
+    if(d.notes&&d.notes.length) txt += ` | Notes: ${d.notes.map(n=>n.text).join(' | ')}`;
+    return txt;
+  }).join('\n');
+
+  const nn = STATE.nns.map(n=>{
+    let txt = `- ${n.txt}`;
+    if(n.notes&&n.notes.length) txt += ` | ${n.notes.map(x=>x.text).join(' | ')}`;
+    return txt;
+  }).join('\n');
+
   const ae = STATE.autoeval||{};
   const pc = (STATE.publicCible||[]).map(p=>`- ${p.titre} : ${p.texte}`).join('\n');
-  const comp = (STATE.competences||[]).map(c=>`- ${c.nom} (auto-éval: ${c.eval}/10)`).join('\n');
+  const comp = (STATE.competences||[]).map(c=>{
+    let txt = `- ${c.nom} (auto-éval: ${c.eval}/10)`;
+    if(c.notes&&c.notes.length) txt += ` | ${c.notes.map(n=>n.text).join(' | ')}`;
+    return txt;
+  }).join('\n');
   const notes = (STATE.notes||[]).map(n=>n.text).join('\n');
   const globals = (STATE.globals||[]).map(g=>g.text).join('\n');
-  const mem = (STATE.memoire||[]).filter(r=>r.text).map(r=>`[${r.title}] ${r.text}`).join('\n');
+  const mem = (STATE.memoire||[]).map(r=>{
+    let txt = `[${r.title}]`;
+    if(r.text) txt += ` ${r.text}`;
+    if(r.notes&&r.notes.length) txt += ` | ${r.notes.map(n=>n.text).join(' | ')}`;
+    return txt;
+  }).join('\n');
+  const custom = (STATE.customBlocs||[]).map(b=>`[${b.titre}] ${(b.items||[]).map(i=>i.text).join(', ')}`).join('\n');
+  const kpis = (STATE.kpis||[]).map(k=>`${k.lbl}: ${k.val}`).join(' | ');
+
+  // Toutes les questions du questionnaire avec réponses
   const q = STATE.questionnaire||{};
+  const allQ = [...QUESTIONS.filter(x=>x.id), ...(STATE.customQuestions||[])];
+  const qStr = allQ.map(quest=>{ const r=q[quest.id]; if(!r) return null; return `Q: ${quest.label}\nR: ${r}`; }).filter(Boolean).join('\n\n');
 
   const problematique = `Dans quelle mesure le recours autonome à une chaîne d'outils IA peut-il compenser l'absence d'encadrement professionnel en ingénierie pédagogique — et à quelles conditions cette autonomie produit-elle des apprentissages professionnalisants plutôt qu'une simple exécution assistée ?`;
 
-  return `Tu es le directeur de mémoire de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum (start-up, budget zéro, 6 semaines, seule). Tu dois rédiger un COMPTE RENDU PROFESSIONNEL ET ANALYTIQUE structuré qui constitue la matière principale de son mémoire de Master PIF & Médias Numériques.
+  return `Tu es le directeur de mémoire de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum (start-up, budget zéro, 6 semaines, seule). Rédige un COMPTE RENDU COMPLET structuré en 4 temps — matière principale de son mémoire de Master PIF & Médias Numériques.
 
-PROBLÉMATIQUE DU MÉMOIRE :
-${problematique}
+PROBLÉMATIQUE : ${problematique}
 
-CADRE THÉORIQUE À MOBILISER (retour de Mme Longuet, directrice de mémoire) :
-- Compétence professionnelle selon Guy Le Boterf : la compétence = mobiliser des ressources en situation
-- Apprentissage en situation de travail : apprentissage par l'erreur, l'itération, l'ajustement permanent
-- Réflexivité professionnelle selon Donald Schön : praticien réflexif, réflexion dans/sur l'action
-- Taxonomie de Bloom : 6 niveaux (mémoriser → comprendre → appliquer → analyser → évaluer → créer)
+CADRE THÉORIQUE : Le Boterf (compétence = mobiliser des ressources en situation) | Schön (praticien réflexif) | Bloom (6 niveaux) | Apprentissage par l'erreur et l'itération
 
-STRUCTURE DU COMPTE RENDU (4 temps demandés par la directrice) :
-1. Ancrage théorique — contextualiser la mission dans les cadres conceptuels
-2. Collecte de données — décrire le terrain (la chaîne de fabrication, les ruptures, les traces numériques)
-3. Analyse — cartographie des ruptures, analyse des apprentissages, rôle de l'IA (tuteur vs exécutant)
-4. Retour réflexif et préconisations — répondre à la problématique, limites, transférabilité
+STRUCTURE :
+## 1. Ancrage théorique
+## 2. Collecte de données — Le terrain  
+## 3. Analyse — Ruptures, apprentissages, rôle de l'IA (tuteur vs exécutant)
+## 4. Retour réflexif et préconisations
 
 ---
-DONNÉES DU TABLEAU DE BORD (terrain de recherche de Karima) :
+DONNÉES COMPLÈTES DU TABLEAU DE BORD :
 
-LIVRABLES PRODUITS :
-${lv||'(non renseigné)'}
+KPIs : ${kpis||'(non renseigné)'}
 
-CHAÎNE D'OUTILS IA UTILISÉE :
-${ot||'(non renseigné)'}
+LIVRABLES (avec remarques, prompts, captures) :
+${lv||'(aucun)'}
 
-DIFFICULTÉS / RUPTURES RENCONTRÉES :
-${df||'(non renseigné)'}
+CHAÎNE D'OUTILS (avec actes narratifs, prompts, notes) :
+${ot||'(aucun)'}
 
-NON-NÉGOCIABLES PÉDAGOGIQUES :
-${nn||'(non renseigné)'}
+DIFFICULTÉS / RUPTURES :
+${df||'(aucune)'}
 
-PUBLIC CIBLE :
-${pc||'(non renseigné)'}
+NON-NÉGOCIABLES :
+${nn||'(aucun)'}
 
-COMPÉTENCES IP DÉVELOPPÉES :
-${comp||'(non renseigné)'}
+PUBLIC CIBLE : ${pc||'(non défini)'}
 
-NOTES DE TERRAIN :
-${notes||'(aucune)'}
+COMPÉTENCES DÉVELOPPÉES : ${comp||'(non renseigné)'}
 
-OBSERVATIONS GÉNÉRALES :
-${globals||'(aucune)'}
+NOTES DE TERRAIN : ${notes||'(aucune)'}
 
-NOTES MÉMOIRE :
-${mem||'(aucune)'}
+OBSERVATIONS GÉNÉRALES : ${globals||'(aucune)'}
 
-AUTO-ÉVALUATION :
-- Livrer la formation : ${ae.livrer||0}/10
-- Apprendre le métier IP : ${ae.apprendre||0}/10
-- Convaincre la tutrice : ${ae.convaincre||0}/10
+NOTES MÉMOIRE : ${mem||'(aucune)'}
 
----
-RÉPONSES AU QUESTIONNAIRE RÉFLEXIF (données qualitatives primaires) :
+BLOCS PERSONNALISÉS : ${custom||'(aucun)'}
 
-AVANT/APRÈS :
-Représentation initiale du métier IP : ${q.q_avant_ip||'(non renseigné)'}
-Définition après stage : ${q.q_apres_ip||'(non renseigné)'}
-Écart imaginé/réel : ${q.q_ecart||'(non renseigné)'}
+AUTO-ÉVALUATION : Livrer ${ae.livrer||0}/10 | Apprendre IP ${ae.apprendre||0}/10 | Convaincre ${ae.convaincre||0}/10
 
-RÔLE DE L'IA :
-IA comme tuteur (moments d'apprentissage réel) : ${q.q_ia_tuteur||'(non renseigné)'}
-IA comme exécutant (production sans apprentissage) : ${q.q_ia_executant||'(non renseigné)'}
-IA comme béquille (évitement de l'effort) : ${q.q_ia_bequille||'(non renseigné)'}
-Sans IA — impossible vs plus long : ${q.q_sans_ia||'(non renseigné)'}
-
-TAXONOMIE DE BLOOM :
-Niveau global auto-évalué : ${q.q_bloom_global?'Niveau '+q.q_bloom_global+'/6':'(non renseigné)'}
-Justification du niveau : ${q.q_bloom_details||'(non renseigné)'}
-Capable de refaire dans un autre contexte : ${q.q_refaire?q.q_refaire+'/5':'(non renseigné)'}
-Ce que je ferais différemment : ${q.q_refaire_detail||'(non renseigné)'}
-
-COMPÉTENCES IP — LE BOTERF :
-Ressources personnelles mobilisées : ${q.q_competences_mobilisees||'(non renseigné)'}
-Décision pédagogique prise seule : ${q.q_decision||'(non renseigné)'}
-Erreur identifiée et corrigée : ${q.q_erreur||'(non renseigné)'}
-Compétences transférables sans IA : ${q.q_transfert||'(non renseigné)'}
-
-RÉFLEXIVITÉ — SCHÖN :
-Description des ruptures et vécu intérieur : ${q.q_ruptures||'(non renseigné)'}
-Analyse du doute professionnel : ${q.q_doute||'(non renseigné)'}
-Niveau d'autonomie professionnelle : ${q.q_autonomie?q.q_autonomie+'/5':'(non renseigné)'}
-Nuance sur l'autonomie : ${q.q_autonomie_nuance||'(non renseigné)'}
-Exemples réflexion dans/sur l'action : ${q.q_schon||'(non renseigné)'}
-
-SYNTHÈSE DE KARIMA :
-Réponse à la problématique : ${q.q_problematique||'(non renseigné)'}
-Professionnalisation vs exécution assistée : ${q.q_professionnalisation||'(non renseigné)'}
-Recommandations pour un autre alternant : ${q.q_recommandation||'(non renseigné)'}
-Ce que ce stage m'a appris sur moi : ${q.q_mot_fin||'(non renseigné)'}
+QUESTIONNAIRE RÉFLEXIF (réponses de Karima) :
+${qStr||'(questionnaire non rempli)'}
 
 ---
-INSTRUCTIONS DE RÉDACTION :
-- Rédige un compte rendu professionnel structuré en 4 temps (voir structure ci-dessus)
-- Utilise les données du tableau de bord ET les réponses au questionnaire comme matière première
-- Mobilise les cadres théoriques (Le Boterf, Schön, Bloom) pour analyser, pas juste décrire
-- Sois nuancé sur le rôle de l'IA : ni plaidoyer ni procès, mais analyse rigoureuse
-- Réponds directement à la problématique dans la partie "retour réflexif"
-- Minimum 700 mots. Titres avec ##. Sous-titres avec ###.
-- Ton professionnel, analytique, mais vivant — c'est un mémoire professionnel, pas un rapport technique`;
+INSTRUCTIONS : Minimum 800 mots. Titres ## et ###. Mobilise les cadres théoriques pour ANALYSER. Inclus les actes narratifs des outils et les prompts comme traces de l'activité IP. Réponds directement à la problématique dans la partie 4. Ton professionnel et analytique.`;
 }
+
 
 async function genCompteRendu(){
   const modal=document.getElementById('crModal');
@@ -2786,7 +3641,8 @@ function initCollapseAndDrag(){
   // COLLAPSE — tous les .collapsible
   document.querySelectorAll('.ctitle.collapsible').forEach(ct=>{
     ct.addEventListener('click', e=>{
-      if(e.target.classList.contains('card-drag-handle')) return;
+      // Ignorer les clics sur le handle, le bouton ×, les boutons et les inputs
+      if(e.target.closest('.card-drag-handle,.bloc-del-btn,button,input,select')) return;
       const cardId=ct.getAttribute('data-target');
       const card=cardId ? document.getElementById(cardId) : ct.closest('.card');
       if(card) card.classList.toggle('collapsed');
@@ -3175,6 +4031,8 @@ document.addEventListener('click', e=>{
 ══════════════════════════════════ */
 let _asstHistory = [];
 
+let _asstPastedImage = null;
+
 function toggleAssistant(){
   const panel = document.getElementById('assistant-panel');
   panel.classList.toggle('open');
@@ -3214,31 +4072,41 @@ function asstGetContext(){
 
 const ASST_SYSTEM = `Tu es l'assistant intégré du tableau de bord de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum. Son mémoire porte sur : "Dans quelle mesure le recours autonome à une chaîne d'outils IA peut-il compenser l'absence d'encadrement professionnel en ingénierie pédagogique ?"
 
-Tu peux modifier son tableau de bord directement via des actions JSON. 
+Tu es un AGENT capable de modifier directement le tableau de bord. Tu peux faire tout ce que Karima peut faire — SAUF supprimer sans lui demander d'abord.
 
-Quand tu dois modifier le tableau, réponds TOUJOURS avec :
-1. Un texte explicatif bref (ce que tu vas faire)
-2. Un bloc JSON entre balises <ACTION> et </ACTION> avec la structure suivante :
+RÈGLE ABSOLUE : Jamais supprimer sans proposer d'abord avec "delete_confirm".
 
-<ACTION>
-{
-  "type": "add_bloc" | "add_livrable" | "add_diff" | "add_nn" | "add_competence" | "add_note" | "add_custom_items" | "update_info",
-  "data": { ... }
-}
-</ACTION>
+Quand tu dois modifier le tableau, réponds avec :
+1. Un texte explicatif bref
+2. Un ou plusieurs blocs <ACTION>...</ACTION>
 
 Types d'actions disponibles :
-- add_bloc : { "col": "left"|"right", "titre": "...", "emoji": "...", "items": ["item1", "item2"] }
-- add_livrable : { "name": "...", "det": "..." }
-- add_diff : { "title": "...", "sub": "...", "ico": "🔴" }
+
+AJOUTER :
+- add_bloc : { "col": "left"|"right", "titre": "...", "emoji": "...", "items": ["item1","item2"], "color": "#hex" }
+- add_livrable : { "name": "...", "det": "...", "status": "todo"|"cours"|"done" }
+- add_diff : { "title": "...", "sub": "..." }
 - add_nn : { "txt": "..." }
 - add_competence : { "nom": "..." }
 - add_note : { "text": "..." }
-- add_custom_items : { "blocTitre": "titre du bloc existant", "items": ["item1", "item2"] }
-- update_info : pas d'action DOM, juste du texte
+- add_custom_items : { "blocTitre": "...", "items": ["item1","item2"] }
+- add_memoire : { "title": "...", "text": "..." }
+- add_global : { "text": "..." }
+- add_question : { "label": "...", "sublabel": "..." }
 
-Tu peux chaîner plusieurs actions en envoyant plusieurs blocs <ACTION>...</ACTION>.
-Réponds en français, de manière concise et professionnelle.`;
+MODIFIER :
+- update_livrable : { "id": "...", "name": "...", "det": "...", "status": "todo"|"cours"|"done" }
+- update_outil : { "id": "...", "name": "...", "role": "...", "acte": "...", "tag": "..." }
+- update_competence : { "id": "...", "nom": "...", "eval": 0-10 }
+- update_questionnaire : { "questionId": "...", "reponse": "..." }
+- update_bloc_titre : { "blocId": "...", "titre": "..." }
+- fill_field : { "selector": "CSS selector", "value": "..." }
+
+SUPPRIMER (demander confirmation) :
+- delete_confirm : { "what": "description de ce qu'on veut supprimer", "type": "livrable|outil|bloc|...", "id": "..." }
+
+Tu peux chaîner PLUSIEURS actions dans un seul message.
+Réponds en français, concis et professionnel.`;
 
 async function asstSend(){
   const inp = document.getElementById('asst-inp');
@@ -3249,8 +4117,17 @@ async function asstSend(){
   sendBtn.disabled = true;
   inp.value = '';
 
-  // Afficher le message utilisateur
-  asstAddMsg('user', msg);
+  // Afficher le message utilisateur (avec image si collée)
+  let userHtml = msg.replace(/\n/g,'<br>');
+  if(_asstPastedImage){
+    userHtml += `<br><img src="${_asstPastedImage}" style="max-height:80px;max-width:180px;border-radius:5px;margin-top:4px;object-fit:contain">`;
+  }
+  asstAddMsg('user', userHtml);
+  // Réinitialiser l'aperçu
+  const preview=document.getElementById('asst-paste-preview');
+  if(preview) preview.style.display='none';
+  const pastedImg = _asstPastedImage;
+  _asstPastedImage = null;
 
   // Afficher "en train de réfléchir"
   const thinking = asstAddMsg('asst thinking', '⏳ En train de réfléchir…');
@@ -3259,8 +4136,17 @@ async function asstSend(){
   const ctx = asstGetContext();
   const contextStr = `Contexte actuel du tableau de bord :\n${JSON.stringify(ctx, null, 2)}`;
 
-  // Ajouter à l'historique
-  _asstHistory.push({role:'user', content: `${contextStr}\n\nDemande : ${msg}`});
+  // Ajouter à l'historique (avec image si disponible)
+  let userContent;
+  if(pastedImg){
+    userContent = [
+      {type:'text', text:`${contextStr}\n\nDemande : ${msg}`},
+      {type:'image', source:{type:'base64', media_type:'image/png', data: pastedImg.replace(/^data:image\/[^;]+;base64,/,'')}}
+    ];
+  } else {
+    userContent = `${contextStr}\n\nDemande : ${msg}`;
+  }
+  _asstHistory.push({role:'user', content: userContent});
 
   try{
     const r = await fetch('https://api.anthropic.com/v1/messages',{
@@ -3376,14 +4262,125 @@ function asstExecuteAction(action){
       return `${action.data.items?.length||0} éléments ajoutés dans "${bloc.titre}"`;
     }
 
+    case 'add_memoire': {
+      const r={id:uid(),icon:'📝',title:action.data.title||'Nouvelle rubrique',text:action.data.text||'',files:[],fixed:false,notes:[],media:[]};
+      STATE.memoire.push(r); renderMemoire();
+      return `Rubrique mémoire "${r.title}" ajoutée`;
+    }
+    case 'add_global': {
+      STATE.globals.push({id:uid(),text:action.data.text,date:now()}); renderGlobals();
+      return `Observation ajoutée`;
+    }
+    case 'add_question': {
+      if(!STATE.customQuestions) STATE.customQuestions=[];
+      const q={id:'cq_'+uid(),label:action.data.label,sublabel:action.data.sublabel||'',type:'textarea'};
+      STATE.customQuestions.push(q); renderQuestionnaire();
+      return `Question ajoutée au questionnaire`;
+    }
+    case 'update_livrable': {
+      const lv=STATE.livrables.find(x=>x.id===action.data.id||x.name===action.data.name);
+      if(!lv) return `⚠️ Livrable non trouvé`;
+      if(action.data.name)   lv.name=action.data.name;
+      if(action.data.det)    lv.det=action.data.det;
+      if(action.data.status) lv.status=action.data.status;
+      renderLivrables(); return `Livrable "${lv.name}" modifié`;
+    }
+    case 'update_outil': {
+      const ot=STATE.outils.find(x=>x.id===action.data.id||x.name===action.data.name);
+      if(!ot) return `⚠️ Outil non trouvé`;
+      if(action.data.role)  ot.role=action.data.role;
+      if(action.data.acte)  ot.acte=action.data.acte;
+      if(action.data.tag)   ot.tag=action.data.tag;
+      if(action.data.name)  ot.name=action.data.name;
+      renderOutils(); renderChain(); return `Outil "${ot.name}" modifié`;
+    }
+    case 'update_competence': {
+      const c=STATE.competences.find(x=>x.id===action.data.id||x.nom===action.data.nom);
+      if(!c) return `⚠️ Compétence non trouvée`;
+      if(action.data.nom)  c.nom=action.data.nom;
+      if(action.data.eval!==undefined) c.eval=action.data.eval;
+      renderComps(); return `Compétence "${c.nom}" modifiée`;
+    }
+    case 'update_questionnaire': {
+      if(!STATE.questionnaire) STATE.questionnaire={};
+      STATE.questionnaire[action.data.questionId]=action.data.reponse;
+      renderQuestionnaire(); return `Réponse au questionnaire mise à jour`;
+    }
+    case 'update_bloc_titre': {
+      const bloc=(STATE.customBlocs||[]).find(b=>b.id===action.data.blocId||b.titre===action.data.blocId);
+      if(!bloc) return `⚠️ Bloc non trouvé`;
+      bloc.titre=action.data.titre; renderAllCustomBlocs(); return `Bloc renommé "${action.data.titre}"`;
+    }
+    case 'fill_field': {
+      const el=document.querySelector(action.data.selector);
+      if(!el) return `⚠️ Champ non trouvé : ${action.data.selector}`;
+      if(el.tagName==='TEXTAREA'||el.tagName==='INPUT') el.value=action.data.value;
+      else el.textContent=action.data.value;
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+      return `Champ rempli`;
+    }
+    case 'delete_confirm': {
+      // Demander confirmation à Karima avant de supprimer
+      asstAddMsg('asst', `⚠️ Tu m'as demandé de supprimer : <strong>${action.data.what}</strong><br>
+        <button onclick="asstConfirmDelete('${action.data.type}','${action.data.id||''}')" 
+          style="background:var(--red);border:none;color:white;border-radius:5px;padding:4px 10px;font-size:10px;cursor:pointer;margin-top:6px">
+          ✓ Oui, supprimer
+        </button>
+        <button onclick="this.parentNode.innerHTML='❌ Suppression annulée.'" 
+          style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:5px;padding:4px 10px;font-size:10px;cursor:pointer;margin-top:6px;margin-left:6px">
+          Annuler
+        </button>`);
+      return null;
+    }
     default: return null;
   }
 }
 
+function asstConfirmDelete(type, id){
+  switch(type){
+    case 'livrable': { const i=STATE.livrables.findIndex(x=>x.id===id); if(i>=0){STATE.livrables.splice(i,1);renderLivrables();markDirty();asstAddMsg('asst','✅ Livrable supprimé.');} break; }
+    case 'outil':    { const i=STATE.outils.findIndex(x=>x.id===id);    if(i>=0){STATE.outils.splice(i,1);renderOutils();renderChain();markDirty();asstAddMsg('asst','✅ Outil supprimé.');} break; }
+    case 'diff':     { const i=STATE.diffs.findIndex(x=>x.id===id);     if(i>=0){STATE.diffs.splice(i,1);renderDiffs();markDirty();asstAddMsg('asst','✅ Difficulté supprimée.');} break; }
+    case 'bloc':     { const i=(STATE.customBlocs||[]).findIndex(b=>b.id===id); if(i>=0){const b=STATE.customBlocs[i];STATE.customBlocs.splice(i,1);document.getElementById(b.id)?.remove();markDirty();asstAddMsg('asst','✅ Bloc supprimé.');} break; }
+  }
+}
+
 // Entrée avec Ctrl+Entrée ou Shift+Entrée pour nouvelle ligne
-document.getElementById('asst-inp')?.addEventListener('keydown', e=>{
-  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); asstSend(); }
-});
+const asstInpEl = document.getElementById('asst-inp');
+if(asstInpEl){
+  asstInpEl.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); asstSend(); }
+  });
+
+  // Ctrl+V — coller une capture d'écran dans le chat assistant
+  asstInpEl.addEventListener('paste', e=>{
+    const items = [...(e.clipboardData?.items||[])];
+    const imgItem = items.find(it=>it.type.startsWith('image'));
+    if(!imgItem) return; // laisser le comportement normal pour le texte
+    e.preventDefault();
+    const f = imgItem.getAsFile();
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const dataUrl = ev.target.result;
+      // Afficher un aperçu dans le chat
+      _asstPastedImage = dataUrl;
+      const preview = document.getElementById('asst-paste-preview');
+      if(preview){
+        preview.style.display='block';
+        preview.innerHTML=`<div style="position:relative;display:inline-block">
+          <img src="${dataUrl}" style="max-height:70px;max-width:200px;border-radius:5px;object-fit:contain;border:1px solid var(--b2)">
+          <button onclick="_asstPastedImage=null;document.getElementById('asst-paste-preview').style.display='none'" 
+            style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;line-height:1">×</button>
+        </div>
+        <div style="font-size:9px;color:var(--t3);margin-top:3px">📎 Capture prête à être envoyée avec le prochain message</div>`;
+      }
+      toast('📎 Capture collée — envoie ton message pour l\'inclure');
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
 document.addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key==='R'){
     e.preventDefault();
@@ -3396,6 +4393,168 @@ document.addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key==='R'){
     e.preventDefault();
     openReformModal(window.getSelection()?.toString()||'');
+  }
+});
+
+/* ══════════════════════════════════
+   BARRE DE RECHERCHE GLOBALE
+══════════════════════════════════ */
+let _searchMatches = [];
+let _searchIdx = 0;
+let _searchHighlights = [];
+
+function globalSearch(query){
+  clearSearchHighlights();
+  _searchMatches = [];
+  _searchIdx = 0;
+
+  const clearBtn = document.getElementById('search-clear');
+  const countEl  = document.getElementById('search-count');
+
+  if(!query || query.trim().length < 1){
+    if(clearBtn) clearBtn.style.display='none';
+    if(countEl)  countEl.style.display='none';
+    return;
+  }
+  if(clearBtn) clearBtn.style.display='block';
+
+  const q = query.toLowerCase().trim();
+
+  // Chercher dans tous les textes visibles du tableau
+  const selectors = [
+    // Titres des blocs — TOUS les blocs
+    '.ctitle','.ctitle-text','.custom-bloc-titre','.mem-title',
+    // Objectif
+    '.otxt','.osub',
+    // KPIs
+    '.kl','.kn',
+    // Chaîne
+    '.chlbl','.chnote',
+    // Phases
+    '.pname',
+    // Livrables
+    '.lvname','.lvdet',
+    // Outils
+    '.oname','.orole','.oacte',
+    // Difficultés
+    '.dtext strong','.dtext span',
+    // Non-négociables
+    '.nntxt',
+    // Remarques / Notes
+    '.gbody',
+    // Blocs custom
+    '.custom-item-text',
+    // Compétences
+    '.comp-name',
+    // Public Cible
+    '.pit','.pid',
+    // Questionnaire
+    '.q-label','.q-sublabel',
+    // Mémoire
+    '.mem-title',
+    // Prompts
+    '.prompt-title','.prompt-body',
+    // Notes dans rzone
+    '.rtxt',
+  ];
+
+  document.querySelectorAll(selectors.join(',')).forEach(el=>{
+    const txt = (el.textContent||'').toLowerCase();
+    if(txt.includes(q)){
+      _searchMatches.push(el);
+    }
+  });
+
+  if(countEl){
+    countEl.style.display = 'block';
+    if(_searchMatches.length){
+      countEl.textContent = `1/${_searchMatches.length}`;
+      countEl.style.color = 'var(--grn)';
+    } else {
+      countEl.textContent = 'Aucun résultat';
+      countEl.style.color = 'var(--red)';
+    }
+  }
+
+  if(!_searchMatches.length) return;
+
+  // Surligner tous les résultats
+  _searchMatches.forEach(el=>{
+    const orig = {bg:el.style.background, outline:el.style.outline, br:el.style.borderRadius};
+    el.style.background = 'rgba(232,83,58,.18)';
+    el.style.outline = '1px solid var(--red)';
+    el.style.borderRadius = '3px';
+    _searchHighlights.push({el, orig});
+  });
+
+  // Naviguer vers le premier résultat
+  _searchIdx = 0;
+  goToMatch(_searchIdx);
+}
+
+function globalSearchNext(){
+  if(!_searchMatches.length) return;
+  _searchIdx = (_searchIdx + 1) % _searchMatches.length;
+  const countEl = document.getElementById('search-count');
+  if(countEl) countEl.textContent = `${_searchIdx+1}/${_searchMatches.length}`;
+  goToMatch(_searchIdx);
+}
+
+function goToMatch(idx){
+  const el = _searchMatches[idx];
+  if(!el) return;
+
+  // Ouvrir TOUS les blocs parents repliés
+  let parent = el.closest('.card');
+  while(parent){
+    if(parent.classList.contains('collapsed')){
+      parent.classList.remove('collapsed');
+    }
+    parent = parent.parentElement?.closest('.card');
+  }
+
+  // Mettre en évidence le résultat courant
+  _searchHighlights.forEach(({el:e}, i)=>{
+    e.style.background = i===idx ? 'rgba(232,83,58,.35)' : 'rgba(232,83,58,.18)';
+    e.style.outline = i===idx ? '2px solid var(--red)' : '1px solid rgba(232,83,58,.5)';
+  });
+
+  // Si c'est un titre de bloc (.ctitle), scroller vers la carte entière
+  const isTitle = el.classList.contains('ctitle') || el.closest('.ctitle');
+  const scrollTarget = isTitle ? (el.closest('.card') || el) : el;
+  scrollTarget.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function clearSearchHighlights(){
+  _searchHighlights.forEach(({el, orig})=>{
+    el.style.background = orig.bg||'';
+    el.style.outline = orig.outline||'';
+    el.style.borderRadius = orig.br||'';
+  });
+  _searchHighlights = [];
+  _searchMatches = [];
+  _searchIdx = 0;
+}
+
+function clearSearch(){
+  clearSearchHighlights();
+  const inp = document.getElementById('global-search');
+  const clearBtn = document.getElementById('search-clear');
+  const countEl = document.getElementById('search-count');
+  if(inp){ inp.value=''; inp.focus(); }
+  if(clearBtn) clearBtn.style.display='none';
+  if(countEl) countEl.style.display='none';
+}
+
+// Raccourci Ctrl+F
+document.addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey) && e.key==='f'){
+    const inp=document.getElementById('global-search');
+    if(inp){ e.preventDefault(); inp.focus(); inp.select(); }
+  }
+  if(e.key==='Escape'){
+    const inp=document.getElementById('global-search');
+    if(document.activeElement===inp) clearSearch();
   }
 });
 

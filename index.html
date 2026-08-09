@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -560,9 +559,9 @@ main { padding:16px 24px; display:flex; flex-direction:column; gap:11px; width:1
 .asst-msg.asst { background:var(--s2); border:1px solid var(--b2); color:var(--t1); align-self:flex-start; border-bottom-left-radius:3px; }
 .asst-msg.asst strong { color:var(--red); }
 .asst-msg.thinking { color:var(--t3); font-style:italic; }
-.asst-foot { padding:10px 12px; border-top:1px solid var(--b1); display:flex; gap:8px; flex-shrink:0; }
-.asst-inp { flex:1; background:var(--s2); border:1px solid var(--b2); color:var(--t1); border-radius:7px; padding:8px 10px; font-size:11px; resize:none; outline:none; font-family:inherit; line-height:1.5; max-height:100px; }
-.asst-inp:focus { border-color:var(--blue); }
+.asst-foot { padding:10px 12px; border-top:1px solid var(--b1); display:flex; gap:8px; flex-shrink:0; align-items:flex-end; }
+.asst-inp { flex:1; width:100%; background:var(--s2); border:1px solid var(--b2); color:var(--t1); border-radius:8px; padding:10px 12px; font-size:11px; resize:none; outline:none; font-family:inherit; line-height:1.5; min-height:60px; max-height:140px; box-sizing:border-box; }
+.asst-inp:focus { border-color:var(--blue); box-shadow:0 0 0 2px rgba(74,139,224,.12); }
 .asst-send { background:var(--red); border:none; color:white; border-radius:7px; padding:8px 12px; font-size:12px; cursor:pointer; flex-shrink:0; transition:opacity .15s; }
 .asst-send:hover { opacity:.85; }
 .asst-send:disabled { opacity:.4; cursor:default; }
@@ -793,17 +792,20 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     <span id="sstatus">Tout est sauvegardé</span>
     <span id="storageBar"></span>
   </div>
-  <!-- BARRE DE RECHERCHE GLOBALE -->
-  <div style="display:flex;align-items:center;gap:6px;flex:1;max-width:280px;margin:0 12px">
-    <div style="position:relative;flex:1">
-      <input id="global-search" type="text" placeholder="🔍 Rechercher dans le tableau…" 
-        style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:4px 28px 4px 9px;font-size:10px;outline:none;"
+  <!-- BARRE DE RECHERCHE GLOBALE — centrée, large, style Google -->
+  <div style="flex:1;display:flex;justify-content:center;padding:0 12px">
+    <div style="position:relative;width:100%;max-width:460px">
+      <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="global-search" type="text" placeholder="Rechercher dans le tableau…"
+        style="width:100%;box-sizing:border-box;background:var(--s1);border:1px solid var(--b2);color:var(--t1);border-radius:20px;padding:6px 32px 6px 30px;font-size:11px;outline:none;transition:border-color .2s,box-shadow .2s;"
         oninput="globalSearch(this.value)"
         onkeydown="if(event.key==='Enter'){event.preventDefault();globalSearchNext();}"
+        onfocus="this.style.borderColor='var(--blue)';this.style.boxShadow='0 0 0 2px rgba(74,139,224,.15)'"
+        onblur="this.style.borderColor='var(--b2)';this.style.boxShadow='none'"
         autocomplete="off">
-      <button id="search-clear" onclick="clearSearch()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--t3);font-size:12px;cursor:pointer;display:none">✕</button>
+      <button id="search-clear" onclick="clearSearch()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--t3);font-size:13px;cursor:pointer;display:none;line-height:1">✕</button>
+      <div id="search-count" style="position:absolute;right:28px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--t3);white-space:nowrap;display:none;pointer-events:none"></div>
     </div>
-    <div id="search-count" style="font-size:9px;color:var(--t3);white-space:nowrap;display:none"></div>
   </div>
   <div class="sbtns">
     <button class="sbtn" style="border-color:rgba(66,168,71,.3);color:var(--grn)" id="gdBtn" onclick="gdConnect()">☁️ Drive</button>
@@ -847,7 +849,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
       </div>
 
       <div style="font-size:9px;color:var(--t3);margin-top:6px">
-        💡 Tu peux toujours revenir modifier n'importe quel élément plus tard. Rien n'est définitif.
+        💡 Tu peux toujours ajuster plus tard — rien n'est définitif. Chaque élément reste modifiable à tout moment.
       </div>
 
     </div>
@@ -885,9 +887,18 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
     </div>
   </div>
   <div class="asst-foot">
-    <div style="position:relative;flex:1">
-      <textarea class="asst-inp" id="asst-inp" rows="2" placeholder="Ex: Ajoute un bloc… ou colle une capture (Ctrl+V)"></textarea>
-      <div id="asst-paste-preview" style="display:none;margin-top:4px;border-radius:5px;overflow:hidden;max-height:80px"></div>
+    <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+      <div id="asst-apikey-row" style="display:flex;gap:6px;align-items:center">
+        <input id="asst-apikey" type="password" placeholder="Clé API Anthropic (sk-ant-…)" 
+          style="flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:5px 8px;font-size:10px;outline:none;font-family:monospace"
+          oninput="localStorage.setItem('kb_asst_key',this.value)">
+        <button onclick="document.getElementById('asst-apikey-row').style.display='none'" 
+          style="background:transparent;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:0 4px">✕</button>
+      </div>
+      <div style="position:relative">
+        <textarea class="asst-inp" id="asst-inp" rows="3" placeholder="Décris ce que tu veux faire… (Ctrl+V pour coller une image)"></textarea>
+        <div id="asst-paste-preview" style="display:none;margin-top:4px;border-radius:5px;overflow:hidden;max-height:80px"></div>
+      </div>
     </div>
     <button class="asst-send" id="asst-send" onclick="asstSend()">➤</button>
   </div>
@@ -1139,21 +1150,27 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
           <span class="ctitle-collapse">▼</span><button class="bloc-del-btn" onclick="deleteBloc('card-priorite','🏆 Triple Priorité',event)" title="Supprimer ce bloc">×</button>
         </div>
         <div class="card-body">
-          <div style="display:flex;flex-direction:column;gap:7px">
-            <div class="pi" style="border-left-color:var(--red)">
-              <div class="pit">🚀 Livrer</div>
-              <div class="pid">La formation certifiante complète, testable sur LMS</div>
-              <div id="g-livrer" style="margin-top:6px;width:100%"></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="comp-item" style="border-left:3px solid var(--red)">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                <span style="font-size:13px;font-weight:700;color:var(--t1);flex:1">🚀 Livrer</span>
+              </div>
+              <div style="font-size:10px;color:var(--t3);margin-bottom:6px">La formation certifiante complète, testable sur LMS</div>
+              <div id="g-livrer" style="width:100%"></div>
             </div>
-            <div class="pi" style="border-left-color:var(--gold)">
-              <div class="pit">📚 Apprendre</div>
-              <div class="pid">Maîtriser le métier d'IP en marchant — sans filet</div>
-              <div id="g-apprendre" style="margin-top:6px;width:100%"></div>
+            <div class="comp-item" style="border-left:3px solid var(--gold)">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                <span style="font-size:13px;font-weight:700;color:var(--t1);flex:1">📚 Apprendre</span>
+              </div>
+              <div style="font-size:10px;color:var(--t3);margin-bottom:6px">Maîtriser le métier d'IP en marchant — sans filet</div>
+              <div id="g-apprendre" style="width:100%"></div>
             </div>
-            <div class="pi" style="border-left-color:var(--grn)">
-              <div class="pit">✅ Convaincre</div>
-              <div class="pid">Prouver à la tutrice la valeur de ce travail</div>
-              <div id="g-convaincre" style="margin-top:6px;width:100%"></div>
+            <div class="comp-item" style="border-left:3px solid var(--grn)">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                <span style="font-size:13px;font-weight:700;color:var(--t1);flex:1">✅ Convaincre</span>
+              </div>
+              <div style="font-size:10px;color:var(--t3);margin-bottom:6px">Prouver à la tutrice la valeur de ce travail</div>
+              <div id="g-convaincre" style="width:100%"></div>
             </div>
           </div>
         </div>
@@ -4108,6 +4125,35 @@ SUPPRIMER (demander confirmation) :
 Tu peux chaîner PLUSIEURS actions dans un seul message.
 Réponds en français, concis et professionnel.`;
 
+async function abmLoadBlocItems(){}  // stub — plus utilisé dans la modale simplifiée
+function abmExecuteElementAdd(){ return false; }  // stub
+function findBlocAndItem(blocType, blocCustom, itemIdx, itemCustom){
+  const arrMap = {
+    livrables: STATE.livrables, outils: STATE.outils, diffs: STATE.diffs,
+    nns: STATE.nns, competences: STATE.competences, notes: STATE.notes,
+    memoire: STATE.memoire, public: STATE.publicCible, remarques: STATE.globals,
+  };
+  const renderMap = {
+    livrables: renderLivrables, outils:()=>{renderOutils();renderChain();},
+    diffs: renderDiffs, nns: renderNNs, competences: renderComps,
+    notes: renderNotesList, memoire: renderMemoire, public: renderPC,
+    remarques: renderGlobals,
+  };
+  if(blocType && blocType!=='custom'){
+    const arr = arrMap[blocType]||[];
+    let item = !isNaN(itemIdx)&&arr[itemIdx] ? arr[itemIdx]
+             : itemCustom ? arr.find(x=>(x.name||x.title||x.txt||x.nom||'').toLowerCase().includes(itemCustom.toLowerCase()))
+             : arr[arr.length-1];
+    if(!item) return null;
+    return {item, itemName:item.name||item.title||item.txt||item.nom||'Élément', renderFn:renderMap[blocType]};
+  }
+  const bloc=(STATE.customBlocs||[]).find(b=>b.titre.toLowerCase().includes((blocCustom||'').toLowerCase()));
+  if(!bloc||!bloc.items) return null;
+  const item=bloc.items[bloc.items.length-1];
+  if(!item) return null;
+  return {item, itemName:item.text||'Élément', renderFn:()=>renderCustomItems(bloc)};
+}
+
 async function asstSend(){
   const inp = document.getElementById('asst-inp');
   const msg = inp.value.trim();
@@ -4117,78 +4163,76 @@ async function asstSend(){
   sendBtn.disabled = true;
   inp.value = '';
 
-  // Afficher le message utilisateur (avec image si collée)
+  // Message utilisateur
   let userHtml = msg.replace(/\n/g,'<br>');
-  if(_asstPastedImage){
-    userHtml += `<br><img src="${_asstPastedImage}" style="max-height:80px;max-width:180px;border-radius:5px;margin-top:4px;object-fit:contain">`;
-  }
+  if(_asstPastedImage) userHtml += `<br><img src="${_asstPastedImage}" style="max-height:80px;max-width:180px;border-radius:5px;margin-top:4px;object-fit:contain">`;
   asstAddMsg('user', userHtml);
-  // Réinitialiser l'aperçu
-  const preview=document.getElementById('asst-paste-preview');
+  const preview = document.getElementById('asst-paste-preview');
   if(preview) preview.style.display='none';
   const pastedImg = _asstPastedImage;
   _asstPastedImage = null;
 
-  // Afficher "en train de réfléchir"
   const thinking = asstAddMsg('asst thinking', '⏳ En train de réfléchir…');
 
-  // Construire le contexte
+  // Contexte compact
   const ctx = asstGetContext();
-  const contextStr = `Contexte actuel du tableau de bord :\n${JSON.stringify(ctx, null, 2)}`;
+  const contextStr = JSON.stringify(ctx);
 
-  // Ajouter à l'historique (avec image si disponible)
   let userContent;
   if(pastedImg){
     userContent = [
-      {type:'text', text:`${contextStr}\n\nDemande : ${msg}`},
+      {type:'text', text:`Contexte tableau:\n${contextStr}\n\nDemande: ${msg}`},
       {type:'image', source:{type:'base64', media_type:'image/png', data: pastedImg.replace(/^data:image\/[^;]+;base64,/,'')}}
     ];
   } else {
-    userContent = `${contextStr}\n\nDemande : ${msg}`;
+    userContent = `Contexte tableau:\n${contextStr}\n\nDemande: ${msg}`;
   }
   _asstHistory.push({role:'user', content: userContent});
 
   try{
     const r = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:1500,
         system: ASST_SYSTEM,
-        messages: _asstHistory.slice(-6) // Garder les 6 derniers messages
+        messages: _asstHistory.slice(-6)
       })
     });
+
+    if(!r.ok){
+      const err = await r.json().catch(()=>({error:{message:r.statusText}}));
+      throw new Error(`${r.status} — ${err?.error?.message||r.statusText}`);
+    }
+
     const d = await r.json();
     const response = d.content?.map(c=>c.text||'').join('')||'';
-
     thinking.remove();
     _asstHistory.push({role:'assistant', content: response});
 
-    // Parser et exécuter les actions
-    const actions = [];
+    // Actions JSON
     const actionRegex = /<ACTION>([\s\S]*?)<\/ACTION>/g;
+    const actions = [];
     let match;
     while((match = actionRegex.exec(response)) !== null){
       try{ actions.push(JSON.parse(match[1].trim())); } catch(e){}
     }
 
-    // Afficher la réponse (sans les blocs ACTION)
     const displayText = response.replace(/<ACTION>[\s\S]*?<\/ACTION>/g,'').trim();
-    const msgEl = asstAddMsg('asst', displayText.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'));
+    asstAddMsg('asst', displayText.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'));
 
-    // Exécuter les actions
-    if(actions.length > 0){
+    if(actions.length){
       const resultMsgs = [];
       actions.forEach(action=>{
-        try{
-          const res = asstExecuteAction(action);
-          if(res) resultMsgs.push(res);
-        }catch(e){ resultMsgs.push('⚠️ Erreur: '+e.message); }
+        try{ const res=asstExecuteAction(action); if(res) resultMsgs.push(res); }
+        catch(e){ resultMsgs.push('⚠️ '+e.message); }
       });
-      if(resultMsgs.length){
-        asstAddMsg('asst', '✅ ' + resultMsgs.join('<br>✅ '));
-      }
+      if(resultMsgs.length) asstAddMsg('asst','✅ '+resultMsgs.join('<br>✅ '));
       markDirty();
     }
 
@@ -4557,6 +4601,10 @@ document.addEventListener('keydown', e=>{
     if(document.activeElement===inp) clearSearch();
   }
 });
+
+// Charger la clé API sauvegardée
+const _savedKey = localStorage.getItem('kb_asst_key');
+if(_savedKey){ const kf=document.getElementById('asst-apikey'); if(kf) kf.value=_savedKey; }
 
 loadAll();
 renderKpis();

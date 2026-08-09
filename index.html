@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -891,7 +892,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
       <div id="asst-apikey-row" style="display:flex;gap:6px;align-items:center">
         <input id="asst-apikey" type="password" placeholder="Clé API Groq (gsk_…)" 
           style="flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:5px 8px;font-size:10px;outline:none;font-family:monospace"
-          oninput="localStorage.setItem('kb_asst_key',this.value)">
+          oninput="const clean=this.value.replace(/[^\x20-\x7E]/g,'').trim();this.value=clean;localStorage.setItem('kb_asst_key',clean)">
         <button onclick="document.getElementById('asst-apikey-row').style.display='none'" 
           style="background:transparent;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:0 4px">✕</button>
       </div>
@@ -3542,7 +3543,7 @@ async function genCompteRendu(){
   body.innerHTML='<div style="text-align:center;padding:40px;color:var(--t2)"><div style="font-size:32px;margin-bottom:12px">⏳</div>Génération en cours…<br><span style="font-size:10px;color:var(--t3)">Cela peut prendre 10 à 20 secondes</span></div>';
   _crText='';
   try{
-    const groqKey2 = (document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'';
+    const groqKey2 = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey2){ body.innerHTML='<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ Clé API Groq manquante — saisis ta clé gsk_ dans le champ de l\'assistant.</div>'; return; }
     const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -3863,7 +3864,7 @@ async function autocorrectText(el){
   const txt = el.value || el.textContent;
   if(!txt || txt.trim().length < 5) return;
   try{
-    const groqKey3 = (document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'';
+    const groqKey3 = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey3) return;
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -4010,7 +4011,7 @@ async function doReform(){
   resultText.textContent = '⏳ Reformulation en cours…';
   const prompt = REFORM_PROMPTS[_selectedTone] || REFORM_PROMPTS.academique;
   try{
-    const groqKey4 = (document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'';
+    const groqKey4 = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey4){ resultText.textContent = '⚠️ Clé API Groq manquante — saisis ta clé gsk_ dans l\'assistant.'; return; }
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -4196,7 +4197,7 @@ async function asstSend(){
   _asstHistory.push({role:'user', content: userContent});
 
   try{
-    const groqKey = (document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'';
+    const groqKey = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey){ throw new Error('Clé API Groq manquante — saisis ta clé gsk_ dans le champ ci-dessus'); }
     const groqMessages = _asstHistory.slice(-6).map(m=>({
       role: m.role,

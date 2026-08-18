@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -3549,7 +3548,7 @@ async function genCompteRendu(){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey2},
       body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
+        model:'llama3-70b-8192',
         max_tokens:2000,
         messages:[{role:'user',content:buildCRPrompt()}]
       })
@@ -3870,7 +3869,7 @@ async function autocorrectText(el){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey3},
       body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
+        model:'llama3-70b-8192',
         max_tokens:500,
         messages:[{role:'user', content:`Corrige uniquement les fautes d'orthographe et de grammaire dans ce texte en français. Ne change pas le style, ne reformule pas, ne modifie pas la ponctuation volontaire. Réponds UNIQUEMENT avec le texte corrigé, sans introduction ni commentaire.\n\nTexte: ${txt}`}]
       })
@@ -4017,7 +4016,7 @@ async function doReform(){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey4},
       body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
+        model:'llama3-70b-8192',
         max_tokens:800,
         messages:[{role:'user', content:`${prompt}\n\nTexte à reformuler :\n"${txt}"\n\nRéponds uniquement avec le texte reformulé, sans introduction ni commentaire.`}]
       })
@@ -4210,7 +4209,7 @@ async function asstSend(){
         'Authorization':'Bearer '+groqKey
       },
       body: JSON.stringify({
-        model:'llama-3.3-70b-versatile',
+        model:'llama3-70b-8192',
         max_tokens:1500,
         messages:[{role:'system',content:ASST_SYSTEM},...groqMessages]
       })

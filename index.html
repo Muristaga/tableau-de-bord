@@ -4114,11 +4114,7 @@ async function autoSelectGroqModel(apiKey) {
   }
 }
 
-const ASST_SYSTEM = `Tu es l'assistant intégré du tableau de bord de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum. Son mémoire porte sur : "Dans quelle mesure le recours autonome à une chaîne d'outils IA peut-il compenser l'absence d'encadrement professionnel en ingénierie pédagogique ?"
-
-Tu es un AGENT capable de modifier directement le tableau de bord. Tu peux faire tout ce que Karima peut faire — SAUF supprimer sans lui demander d'abord.
-
-RÈGLE ABSOLUE : Jamais supprimer sans proposer d'abord avec "delete_confirm".
+const ASST_SYSTEM = `Assistant de Karima Benchaa, apprentie IP chez Santeum. Mémoire : autonomie IA en ingénierie pédagogique. Agent tableau de bord. Ne supprime jamais sans delete_confirm.
 
 Quand tu dois modifier le tableau, réponds avec :
 1. Un texte explicatif bref
@@ -4219,7 +4215,7 @@ async function asstSend(){
   try{
     const groqKey = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey){ throw new Error('Clé API Groq manquante — saisis ta clé gsk_ dans le champ ci-dessus'); }
-    const groqMessages = _asstHistory.slice(-6).map(m=>({
+    const groqMessages = _asstHistory.slice(-4).map(m=>({
       role: m.role,
       content: Array.isArray(m.content) ? m.content.filter(c=>c.type==='text').map(c=>c.text).join('\n') : m.content
     }));

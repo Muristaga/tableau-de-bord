@@ -4114,39 +4114,7 @@ async function autoSelectGroqModel(apiKey) {
   }
 }
 
-const ASST_SYSTEM = `Assistant de Karima Benchaa, apprentie IP chez Santeum. Mémoire : autonomie IA en ingénierie pédagogique. Agent tableau de bord. Ne supprime jamais sans delete_confirm.
-
-Quand tu dois modifier le tableau, réponds avec :
-1. Un texte explicatif bref
-2. Un ou plusieurs blocs <ACTION>...</ACTION>
-
-Types d'actions disponibles :
-
-AJOUTER :
-- add_bloc : { "col": "left"|"right", "titre": "...", "emoji": "...", "items": ["item1","item2"], "color": "#hex" }
-- add_livrable : { "name": "...", "det": "...", "status": "todo"|"cours"|"done" }
-- add_diff : { "title": "...", "sub": "..." }
-- add_nn : { "txt": "..." }
-- add_competence : { "nom": "..." }
-- add_note : { "text": "..." }
-- add_custom_items : { "blocTitre": "...", "items": ["item1","item2"] }
-- add_memoire : { "title": "...", "text": "..." }
-- add_global : { "text": "..." }
-- add_question : { "label": "...", "sublabel": "..." }
-
-MODIFIER :
-- update_livrable : { "id": "...", "name": "...", "det": "...", "status": "todo"|"cours"|"done" }
-- update_outil : { "id": "...", "name": "...", "role": "...", "acte": "...", "tag": "..." }
-- update_competence : { "id": "...", "nom": "...", "eval": 0-10 }
-- update_questionnaire : { "questionId": "...", "reponse": "..." }
-- update_bloc_titre : { "blocId": "...", "titre": "..." }
-- fill_field : { "selector": "CSS selector", "value": "..." }
-
-SUPPRIMER (demander confirmation) :
-- delete_confirm : { "what": "description de ce qu'on veut supprimer", "type": "livrable|outil|bloc|...", "id": "..." }
-
-Tu peux chaîner PLUSIEURS actions dans un seul message.
-Réponds en français, concis et professionnel.`;
+const ASST_SYSTEM = `Tu es l'assistant de Karima. Réponds en français, sois concis.`;
 
 async function abmLoadBlocItems(){}  // stub — plus utilisé dans la modale simplifiée
 function abmExecuteElementAdd(){ return false; }  // stub

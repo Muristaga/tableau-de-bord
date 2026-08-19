@@ -891,7 +891,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
       <div id="asst-apikey-row" style="display:flex;gap:6px;align-items:center">
         <input id="asst-apikey" type="password" placeholder="Clé API Groq (gsk_…)" 
           style="flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:5px 8px;font-size:10px;outline:none;font-family:monospace"
-          oninput="const clean=this.value.replace(/[^\x20-\x7E]/g,'').trim();this.value=clean;localStorage.setItem('kb_asst_key',clean)">
+          oninput="const clean=this.value.replace(/[^\x20-\x7E]/g,'').trim();this.value=clean;localStorage.setItem('kb_asst_key',clean);if(clean.length>10)autoSelectGroqModel(clean)">
         <button onclick="document.getElementById('asst-apikey-row').style.display='none'" 
           style="background:transparent;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:0 4px">✕</button>
       </div>
@@ -3548,7 +3548,7 @@ async function genCompteRendu(){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey2},
       body:JSON.stringify({
-        model:'llama3-70b-8192',
+        model:GROQ_MODEL,
         max_tokens:2000,
         messages:[{role:'user',content:buildCRPrompt()}]
       })
@@ -3869,7 +3869,7 @@ async function autocorrectText(el){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey3},
       body: JSON.stringify({
-        model:'llama3-70b-8192',
+        model:GROQ_MODEL,
         max_tokens:500,
         messages:[{role:'user', content:`Corrige uniquement les fautes d'orthographe et de grammaire dans ce texte en français. Ne change pas le style, ne reformule pas, ne modifie pas la ponctuation volontaire. Réponds UNIQUEMENT avec le texte corrigé, sans introduction ni commentaire.\n\nTexte: ${txt}`}]
       })
@@ -4016,7 +4016,7 @@ async function doReform(){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey4},
       body: JSON.stringify({
-        model:'llama3-70b-8192',
+        model:GROQ_MODEL,
         max_tokens:800,
         messages:[{role:'user', content:`${prompt}\n\nTexte à reformuler :\n"${txt}"\n\nRéponds uniquement avec le texte reformulé, sans introduction ni commentaire.`}]
       })
@@ -4091,6 +4091,27 @@ function asstGetContext(){
     notes: (STATE.notes||[]).map(n=>n.text),
     memoire: (STATE.memoire||[]).map(r=>({title:r.title})),
   };
+}
+
+// Modèle Groq actif — mis à jour automatiquement au démarrage
+let GROQ_MODEL = 'qwen/qwen3.6-27b';
+
+async function autoSelectGroqModel(apiKey) {
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': 'Bearer ' + apiKey }
+    });
+    const d = await r.json();
+    const models = (d.data || [])
+      .map(m => m.id)
+      .filter(id => !id.includes('whisper') && !id.includes('tts') && !id.includes('vision') && !id.includes('guard'));
+    if (models.length > 0) {
+      GROQ_MODEL = models[0];
+      console.log('Modèle Groq sélectionné automatiquement:', GROQ_MODEL);
+    }
+  } catch(e) {
+    console.log('Modèle par défaut conservé:', GROQ_MODEL);
+  }
 }
 
 const ASST_SYSTEM = `Tu es l'assistant intégré du tableau de bord de Karima Benchaa, apprentie ingénieure pédagogique en stage chez Santeum. Son mémoire porte sur : "Dans quelle mesure le recours autonome à une chaîne d'outils IA peut-il compenser l'absence d'encadrement professionnel en ingénierie pédagogique ?"
@@ -4209,7 +4230,7 @@ async function asstSend(){
         'Authorization':'Bearer '+groqKey
       },
       body: JSON.stringify({
-        model:'llama3-70b-8192',
+        model:GROQ_MODEL,
         max_tokens:1500,
         messages:[{role:'system',content:ASST_SYSTEM},...groqMessages]
       })
@@ -4614,7 +4635,7 @@ document.addEventListener('keydown', e=>{
 
 // Charger la clé API sauvegardée
 const _savedKey = localStorage.getItem('kb_asst_key');
-if(_savedKey){ const kf=document.getElementById('asst-apikey'); if(kf) kf.value=_savedKey; }
+if(_savedKey){ const kf=document.getElementById('asst-apikey'); if(kf) kf.value=_savedKey; autoSelectGroqModel(_savedKey); }
 
 loadAll();
 renderKpis();

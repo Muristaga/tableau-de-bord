@@ -4172,11 +4172,11 @@ async function asstSend(){
   let userContent;
   if(pastedImg){
     userContent = [
-      {type:'text', text:`Contexte tableau:\n${contextStr}\n\nDemande: ${msg}`},
+      {type:'text', text: msg.slice(0,600)},
       {type:'image', source:{type:'base64', media_type:'image/png', data: pastedImg.replace(/^data:image\/[^;]+;base64,/,'')}}
     ];
   } else {
-    userContent = `Contexte tableau:\n${contextStr}\n\nDemande: ${msg}`;
+    userContent = msg.slice(0, 600);
   }
   _asstHistory.push({role:'user', content: userContent});
 

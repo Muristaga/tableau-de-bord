@@ -4183,9 +4183,9 @@ async function asstSend(){
   try{
     const groqKey = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey){ throw new Error('Clé API Groq manquante — saisis ta clé gsk_ dans le champ ci-dessus'); }
-    const groqMessages = _asstHistory.slice(-4).map(m=>({
+    const groqMessages = _asstHistory.slice(-2).map(m=>({
       role: m.role,
-      content: Array.isArray(m.content) ? m.content.filter(c=>c.type==='text').map(c=>c.text).join('\n') : m.content
+      content: (Array.isArray(m.content) ? m.content.filter(c=>c.type==='text').map(c=>c.text).join('\n') : m.content).slice(0, 800)
     }));
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -4195,7 +4195,7 @@ async function asstSend(){
       },
       body: JSON.stringify({
         model:GROQ_MODEL,
-        max_tokens:1500,
+        max_tokens:800,
         messages:[{role:'system',content:ASST_SYSTEM},...groqMessages]
       })
     });

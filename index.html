@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -4094,7 +4095,7 @@ function asstGetContext(){
 }
 
 // Modèle Groq actif — mis à jour automatiquement au démarrage
-let GROQ_MODEL = 'qwen/qwen3.6-27b';
+let GROQ_MODEL = 'llama-3.1-8b-instant';
 
 async function autoSelectGroqModel(apiKey) {
   try {
@@ -4104,7 +4105,7 @@ async function autoSelectGroqModel(apiKey) {
     const d = await r.json();
     const models = (d.data || [])
       .map(m => m.id)
-      .filter(id => !id.includes('whisper') && !id.includes('tts') && !id.includes('vision') && !id.includes('guard'));
+      .filter(id => !id.includes('whisper') && !id.includes('tts') && !id.includes('vision') && !id.includes('guard') && !id.includes('qwen'));
     if (models.length > 0) {
       GROQ_MODEL = models[0];
       console.log('Modèle Groq sélectionné automatiquement:', GROQ_MODEL);

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -892,7 +891,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
       <div id="asst-apikey-row" style="display:flex;gap:6px;align-items:center">
         <input id="asst-apikey" type="password" placeholder="Clé API Groq (gsk_…)" 
           style="flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:5px 8px;font-size:10px;outline:none;font-family:monospace"
-          oninput="const clean=this.value.replace(/[^\x20-\x7E]/g,'').trim();this.value=clean;localStorage.setItem('kb_asst_key',clean);if(clean.length>10)autoSelectGroqModel(clean)">
+          oninput="const clean=this.value.replace(/[^\x20-\x7E]/g,'').trim();this.value=clean;localStorage.setItem('kb_asst_key',clean)">
         <button onclick="document.getElementById('asst-apikey-row').style.display='none'" 
           style="background:transparent;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:0 4px">✕</button>
       </div>
@@ -4097,23 +4096,6 @@ function asstGetContext(){
 // Modèle Groq actif — mis à jour automatiquement au démarrage
 let GROQ_MODEL = 'llama-3.1-8b-instant';
 
-async function autoSelectGroqModel(apiKey) {
-  try {
-    const r = await fetch('https://api.groq.com/openai/v1/models', {
-      headers: { 'Authorization': 'Bearer ' + apiKey }
-    });
-    const d = await r.json();
-    const models = (d.data || [])
-      .map(m => m.id)
-      .filter(id => !id.includes('whisper') && !id.includes('tts') && !id.includes('vision') && !id.includes('guard') && !id.includes('qwen'));
-    if (models.length > 0) {
-      GROQ_MODEL = models[0];
-      console.log('Modèle Groq sélectionné automatiquement:', GROQ_MODEL);
-    }
-  } catch(e) {
-    console.log('Modèle par défaut conservé:', GROQ_MODEL);
-  }
-}
 
 const ASST_SYSTEM = `Tu es l'assistant de Karima. Réponds en français, sois concis.`;
 
@@ -4600,7 +4582,7 @@ document.addEventListener('keydown', e=>{
 
 // Charger la clé API sauvegardée
 const _savedKey = localStorage.getItem('kb_asst_key');
-if(_savedKey){ const kf=document.getElementById('asst-apikey'); if(kf) kf.value=_savedKey; autoSelectGroqModel(_savedKey); }
+if(_savedKey){ const kf=document.getElementById('asst-apikey'); if(kf) kf.value=_savedKey; }
 
 loadAll();
 renderKpis();

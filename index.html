@@ -3607,15 +3607,7 @@ async function genCompteRendu(){
   try{
     const groqKey2 = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey2){ body.innerHTML='<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ Clé API Groq manquante — saisis ta clé gsk_ dans le champ de l\'assistant.</div>'; return; }
-    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey2},
-      body:JSON.stringify({
-        model:GROQ_MODEL,
-        max_tokens:2000,
-        messages:[{role:'user',content:buildCRPrompt()}]
-      })
-    });
+    const r=await groqFetch(groqKey2, [{role:'user',content:buildCRPrompt()}], 2000);
     if(!r.ok){
       const err=await r.text();
       body.innerHTML=`<div style="text-align:center;padding:40px;color:var(--orn)">⚠️ Erreur API (${r.status})<br><span style="font-size:10px">${err.substring(0,200)}</span></div>`;
@@ -3937,15 +3929,7 @@ async function autocorrectText(el){
   try{
     const groqKey3 = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey3) return;
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey3},
-      body: JSON.stringify({
-        model:GROQ_MODEL,
-        max_tokens:500,
-        messages:[{role:'user', content:`Corrige uniquement les fautes d'orthographe et de grammaire dans ce texte en français. Ne change pas le style, ne reformule pas, ne modifie pas la ponctuation volontaire. Réponds UNIQUEMENT avec le texte corrigé, sans introduction ni commentaire.\n\nTexte: ${txt}`}]
-      })
-    });
+    const r = await groqFetch(groqKey3, [{role:'user', content:`Corrige uniquement les fautes d'orthographe et de grammaire dans ce texte en français. Ne change pas le style, ne reformule pas, ne modifie pas la ponctuation volontaire. Réponds UNIQUEMENT avec le texte corrigé, sans introduction ni commentaire.\n\nTexte: ${txt}`}], 500);
     const d = await r.json();
     const corrected = (d.choices?.[0]?.message?.content || d.content?.map(c=>c.text||'').join('')||'').trim();
     if(corrected && corrected !== txt.trim()){
@@ -4084,15 +4068,7 @@ async function doReform(){
   try{
     const groqKey4 = ((document.getElementById('asst-apikey')?.value||'').trim() || localStorage.getItem('kb_asst_key')||'').replace(/[^\x20-\x7E]/g,'').trim();
     if(!groqKey4){ resultText.textContent = '⚠️ Clé API Groq manquante — saisis ta clé gsk_ dans l\'assistant.'; return; }
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey4},
-      body: JSON.stringify({
-        model:GROQ_MODEL,
-        max_tokens:800,
-        messages:[{role:'user', content:`${prompt}\n\nTexte à reformuler :\n"${txt}"\n\nRéponds uniquement avec le texte reformulé, sans introduction ni commentaire.`}]
-      })
-    });
+    const r = await groqFetch(groqKey4, [{role:'user', content:`${prompt}\n\nTexte à reformuler :\n"${txt}"\n\nRéponds uniquement avec le texte reformulé, sans introduction ni commentaire.`}], 800);
     const d = await r.json();
     const result = d.choices?.[0]?.message?.content || d.content?.map(c=>c.text||'').join('') || '';
     if(result){
@@ -4166,7 +4142,34 @@ function asstGetContext(){
 }
 
 // Modèle Groq actif — mis à jour automatiquement au démarrage
-let GROQ_MODEL = 'llama-3.1-8b-instant';
+let GROQ_MODEL = 'llama-3.3-70b-versatile';
+// Modèles de secours essayés automatiquement si GROQ_MODEL n'est plus disponible
+// (Groq retire des modèles régulièrement — ça évite d'être bloqué en attendant un correctif manuel)
+const GROQ_FALLBACK_MODELS = ['llama-3.3-70b-versatile','llama-3.1-8b-instant','openai/gpt-oss-20b','llama-3.1-70b-versatile','gemma2-9b-it'];
+async function groqFetch(apiKey, messages, maxTokens){
+  const tried = new Set();
+  const candidates = [GROQ_MODEL, ...GROQ_FALLBACK_MODELS];
+  let lastResponse = null;
+  for(const model of candidates){
+    if(tried.has(model)) continue;
+    tried.add(model);
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages })
+    });
+    lastResponse = r;
+    if(r.ok){
+      if(model !== GROQ_MODEL) GROQ_MODEL = model; // on retient le modèle qui fonctionne pour la suite
+      return r;
+    }
+    if(r.status !== 404 && r.status !== 400) return r; // erreur non liée au modèle (ex: mauvaise clé) — inutile d'essayer d'autres modèles
+    const bodyText = await r.clone().text().catch(()=>'');
+    if(!/does not exist|decommission|model_not_found|not found/i.test(bodyText)) return r;
+    // sinon : ce modèle n'existe plus, on essaie le suivant
+  }
+  return lastResponse;
+}
 
 
 const ASST_SYSTEM = `Tu es l'assistant de Karima. Réponds en français, sois concis.`;
@@ -4242,18 +4245,7 @@ async function asstSend(){
       role: m.role,
       content: (Array.isArray(m.content) ? m.content.filter(c=>c.type==='text').map(c=>c.text).join('\n') : m.content).slice(0, 800)
     }));
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+groqKey
-      },
-      body: JSON.stringify({
-        model:GROQ_MODEL,
-        max_tokens:800,
-        messages:[{role:'system',content:ASST_SYSTEM},...groqMessages]
-      })
-    });
+    const r = await groqFetch(groqKey, [{role:'system',content:ASST_SYSTEM},...groqMessages], 800);
 
     if(!r.ok){
       const err = await r.json().catch(()=>({error:{message:r.statusText}}));

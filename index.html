@@ -14,7 +14,9 @@
 <script>
 /* ══ GOOGLE DRIVE CONFIG ══ */
 const GD_CLIENT_ID = '609857510275-s7prrhjl4dnkscuuc79ttue29u6u4hii.apps.googleusercontent.com';
-const GD_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const GD_FOLDER_NAME = 'Stage'; // nom du dossier que l'app crée et possède sur Drive
+let GD_FOLDER_ID = localStorage.getItem('gd_folder_id') || null; // déterminé automatiquement (créé par l'app elle-même)
 const GD_FILE_NAME = 'tableau-bord-karima.json';
 let gdToken = null;
 let gdFileId = null;
@@ -22,6 +24,34 @@ let gdTokenExpiry = 0;
 let gdTokenClient = null;
 let gdAutoSaveTimer = null;
 let gdReconnectTimer = null;
+let gdHydrating = true; // tant que true : pas d'auto-sauvegarde Drive (évite d'écraser le Drive avec un état vide au démarrage)
+
+// Trouve (ou crée si besoin) le dossier Drive dédié à l'app. Comme l'app le crée elle-même,
+// elle y a automatiquement accès sous le scope drive.file — pas besoin de sélecteur ni de clé API.
+async function gdFindOrCreateFolder(){
+  if(GD_FOLDER_ID) return GD_FOLDER_ID;
+  if(!gdToken) return null;
+  try{
+    const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${GD_FOLDER_NAME}' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
+      headers: { Authorization: 'Bearer ' + gdToken }
+    });
+    const d = await r.json();
+    if(d.files && d.files.length > 0){
+      GD_FOLDER_ID = d.files[0].id;
+    } else {
+      const meta = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + gdToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: GD_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+      });
+      const mj = await meta.json();
+      GD_FOLDER_ID = mj.id || null;
+    }
+    if(GD_FOLDER_ID) localStorage.setItem('gd_folder_id', GD_FOLDER_ID);
+  }catch(e){}
+  return GD_FOLDER_ID;
+}
 
 // Initialisation Drive — connexion permanente
 function gdInit(){
@@ -32,7 +62,9 @@ function gdInit(){
     gdToken = saved;
     gdTokenExpiry = expiry;
     gdUpdateBtn(true);
-    gdFindFile();
+    gdFindFile().then(()=>gdLoad()).finally(()=>{ gdHydrating=false; });
+  } else {
+    gdHydrating = false; // pas de token → rien à hydrater, l'autosave peut fonctionner normalement
   }
   // Pré-initialiser le client OAuth pour reconnexion silencieuse
   if(window.google){
@@ -47,7 +79,7 @@ function gdInit(){
           localStorage.setItem('gd_token', gdToken);
           localStorage.setItem('gd_token_expiry', gdTokenExpiry.toString());
           gdUpdateBtn(true);
-          gdFindFile();
+          gdFindFile().then(()=>gdLoad()).finally(()=>{ gdHydrating=false; });
           toast('☁️ Drive — connexion permanente active');
         }
       }
@@ -79,6 +111,11 @@ function gdUpdateBtn(connected){
 
 function gdConnect(){
   if(gdToken && Date.now() < gdTokenExpiry){ gdSave(); return; }
+  if(!window.google || !google.accounts){
+    toast('⏳ Google se charge encore — réessaie dans 2 secondes','var(--orn)');
+    setTimeout(gdConnect, 1000);
+    return;
+  }
   if(!gdTokenClient){
     gdTokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GD_CLIENT_ID,
@@ -90,7 +127,7 @@ function gdConnect(){
           localStorage.setItem('gd_token', gdToken);
           localStorage.setItem('gd_token_expiry', gdTokenExpiry.toString());
           gdUpdateBtn(true);
-          gdFindFile().then(() => gdSave());
+          gdFindFile().then(() => gdLoad()).finally(()=>{ gdHydrating=false; gdSave(); });
           toast('✓ Connecté à Google Drive — sauvegarde automatique active');
           setInterval(gdRenewToken, 50*60*1000);
         }
@@ -103,7 +140,10 @@ function gdConnect(){
 async function gdFindFile(){
   if(!gdToken) return;
   try {
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GD_FILE_NAME}'`, {
+    await gdFindOrCreateFolder();
+    if(!GD_FOLDER_ID) return;
+    const q = encodeURIComponent(`'${GD_FOLDER_ID}' in parents and name='${GD_FILE_NAME}' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
       headers: { Authorization: 'Bearer ' + gdToken }
     });
     const d = await r.json();
@@ -112,12 +152,15 @@ async function gdFindFile(){
 }
 
 async function gdSave(){
+  if(gdHydrating) return; // on n'écrit rien tant qu'on n'a pas d'abord lu ce qu'il y a sur Drive
   // Renouveler le token si nécessaire
   if(!gdToken || Date.now() >= gdTokenExpiry - 60000){
     gdRenewToken();
     await new Promise(r=>setTimeout(r,1500));
     if(!gdToken){ gdConnect(); return; }
   }
+  await gdFindOrCreateFolder();
+  if(!GD_FOLDER_ID){ toast('⚠️ Impossible de créer le dossier Drive','var(--orn)'); return; }
   const phases={};
   document.querySelectorAll('.phase').forEach(p=>{phases[p.dataset.ph]=p.classList.contains('done')?'done':p.classList.contains('active')?'active':'todo';});
   STATE.phases=phases; STATE.savedAt=new Date().toISOString();
@@ -137,7 +180,7 @@ async function gdSave(){
       const meta = await fetch('https://www.googleapis.com/drive/v3/files', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + gdToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: GD_FILE_NAME, parents: ['appDataFolder'] })
+        body: JSON.stringify({ name: GD_FILE_NAME, parents: [GD_FOLDER_ID] })
       });
       const mj = await meta.json();
       gdFileId = mj.id;
@@ -154,6 +197,9 @@ async function gdSave(){
       gdUpdateBtn(false);
       toast('⚠️ Session Drive expirée — reconnexion...','var(--orn)');
       setTimeout(()=>gdConnect(), 1000);
+    }
+    else if(r.status === 403){
+      toast('⚠️ Accès Drive refusé — reconnecte-toi (bouton ☁️ Drive)','var(--red)');
     }
   } catch(e){ toast('⚠️ Erreur Drive','var(--orn)'); }
 }
@@ -179,6 +225,14 @@ async function gdLoad(){
     if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
     renderAll(); renderKpis(); toast('☁️ Données chargées depuis Drive');
   } catch(e){ toast('⚠️ Erreur chargement Drive','var(--orn)'); }
+}
+
+/* ══ OUVRIR LE DOSSIER DRIVE DE L'APP ══ */
+async function gdOpenFolder(){
+  if(!gdToken){ toast('Connecte-toi d\'abord à Drive','var(--orn)'); gdConnect(); return; }
+  await gdFindOrCreateFolder();
+  if(GD_FOLDER_ID) window.open(`https://drive.google.com/drive/folders/${GD_FOLDER_ID}`, '_blank');
+  else toast('⚠️ Dossier pas encore créé — sauvegarde d\'abord une fois','var(--orn)');
 }
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
 </script>
@@ -810,7 +864,7 @@ footer { padding:12px 44px; border-top:1px solid var(--b1); display:flex; justif
   <div class="sbtns">
     <button class="sbtn" style="border-color:rgba(66,168,71,.3);color:var(--grn)" id="gdBtn" onclick="gdConnect()">☁️ Drive</button>
     <button class="sbtn" onclick="gdLoad()">☁️ Charger Drive</button>
-    <a href="https://drive.google.com/drive/folders/1Rn0xWcZ-h34DTDthucbfzpvVeDT-MKgJ" target="_blank" class="sbtn" title="Ouvrir le dossier Drive" style="border-color:rgba(66,168,71,.2);color:var(--t2);text-decoration:none">📂 Voir sur Drive</a>
+    <button class="sbtn" onclick="gdOpenFolder()" title="Ouvrir le dossier Drive de l'app" style="border-color:rgba(66,168,71,.2);color:var(--t2)">📂 Voir sur Drive</button>
     <button class="sbtn" id="autocorrectToggle" onclick="toggleAutocorrect()" title="Autocorrection automatique" style="border-color:rgba(66,168,71,.3);color:var(--grn)">✅ Auto-correct</button>
     <button class="sbtn pri"  onclick="exportData()">⬇️ Exporter JSON</button>
     <button class="sbtn pri"  onclick="document.getElementById('impFile').click()">⬆️ Importer JSON</button>
@@ -1834,15 +1888,19 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
         const f=inp.files[0]; if(!f){inp.remove();return;}
         if(isVideo){
           const r=new FileReader(); r.onload=ev=>{
-            mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});
+            const m={id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()};
+            mediaRef.push(m);
             renderMedia(zone.querySelector('.media-grid'),mediaRef);
             markDirty(); toast('🎥 Vidéo ajoutée');
+            attachDriveUpload(m, ev.target.result, rubriqueName, f.name);
           }; r.readAsDataURL(f);
         } else {
           compress(f,data=>{
-            mediaRef.push({id:uid(),type:'image',data,name:'photo-'+now()+'.jpg',date:now()});
+            const m={id:uid(),type:'image',data,name:'photo-'+now()+'.jpg',date:now()};
+            mediaRef.push(m);
             renderMedia(zone.querySelector('.media-grid'),mediaRef);
-            markDirty(); if(gdToken&&rubriqueName) uploadImageToDrive(data,rubriqueName);
+            markDirty();
+            attachDriveUpload(m, data, rubriqueName, null);
             toast('📷 Photo ajoutée');
           });
         }
@@ -1857,9 +1915,11 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
   if(imgInp){
     imgInp.addEventListener('change', e=>{
       [...e.target.files].forEach(f=>compress(f,data=>{
-        mediaRef.push({id:uid(),type:'image',data,name:f.name,date:now()});
+        const m={id:uid(),type:'image',data,name:f.name,date:now()};
+        mediaRef.push(m);
         renderMedia(zone.querySelector('.media-grid'),mediaRef);
-        markDirty(); if(gdToken&&rubriqueName) uploadImageToDrive(data,rubriqueName);
+        markDirty();
+        attachDriveUpload(m, data, rubriqueName, f.name);
       }));
       e.target.value='';
     });
@@ -1871,8 +1931,10 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
     vidInp.addEventListener('change', e=>{
       [...e.target.files].forEach(f=>{
         const r=new FileReader(); r.onload=ev=>{
-          mediaRef.push({id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()});
+          const m={id:uid(),type:'video',data:ev.target.result,name:f.name,date:now()};
+          mediaRef.push(m);
           renderMedia(zone.querySelector('.media-grid'),mediaRef); markDirty();
+          attachDriveUpload(m, ev.target.result, rubriqueName, f.name);
         }; r.readAsDataURL(f);
       });
       e.target.value='';
@@ -1890,10 +1952,11 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
     if(mediaTab&&!mediaTab.classList.contains('active')) mediaTab.click();
     const f=imgItem.getAsFile();
     compress(f,data=>{
-      mediaRef.push({id:uid(),type:'image',data,name:'capture-'+now()+'.png',date:now()});
+      const m={id:uid(),type:'image',data,name:'capture-'+now()+'.png',date:now()};
+      mediaRef.push(m);
       renderMedia(zone.querySelector('.media-grid'),mediaRef);
       markDirty();
-      if(gdToken&&rubriqueName) uploadImageToDrive(data,rubriqueName);
+      attachDriveUpload(m, data, rubriqueName, null);
       toast('📸 Capture collée');
     });
   });;
@@ -1902,7 +1965,7 @@ function mountRzone(wrapper,notesRef,mediaRef,promptsRef,filesRef,toggleBtn,prom
   if(hf){
     renderFiles(zone.querySelector('.file-list'),filesRef);
     const fi=zone.querySelector('[data-pane="files"] input'),fw=zone.querySelector('.file-warn');
-    fi.addEventListener('change',e=>{[...e.target.files].forEach(f=>{if(f.size>2097152){fw.classList.add('show');setTimeout(()=>fw.classList.remove('show'),4000);return;}const r=new FileReader();r.onload=ev=>{filesRef.push({id:uid(),name:f.name,size:f.size,type:f.type,data:ev.target.result,date:now()});renderFiles(zone.querySelector('.file-list'),filesRef);updateSBar();markDirty();};r.readAsDataURL(f);});e.target.value='';});
+    fi.addEventListener('change',e=>{[...e.target.files].forEach(f=>{if(f.size>2097152){fw.classList.add('show');setTimeout(()=>fw.classList.remove('show'),4000);return;}const r=new FileReader();r.onload=ev=>{const m={id:uid(),name:f.name,size:f.size,type:f.type,data:ev.target.result,date:now()};filesRef.push(m);renderFiles(zone.querySelector('.file-list'),filesRef);updateSBar();markDirty();attachDriveUpload(m,ev.target.result,rubriqueName,f.name);};r.readAsDataURL(f);});e.target.value='';});
   }
 
   // Prompts
@@ -2807,7 +2870,7 @@ function toggleChain(key,step){
   const hdr=document.createElement('div');hdr.style.cssText='font-size:9px;color:var(--t2);font-family:Syne,sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 12px 4px';
   hdr.innerHTML=`Documentation — <em style="color:var(--red);font-style:normal">${d.lbl}</em>`;
   wrap.appendChild(hdr);const iw=document.createElement('div');wrap.appendChild(iw);rzc.appendChild(wrap);
-  const zone=mountRzone(iw,STATE.chNotes[key],STATE.chMedia[key],STATE.chPrompts[key],STATE.chFiles[key],null,null);
+  const zone=mountRzone(iw,STATE.chNotes[key],STATE.chMedia[key],STATE.chPrompts[key],STATE.chFiles[key],null,null,d.lbl||key);
   zone.classList.add('open');
 }
 
@@ -3087,7 +3150,7 @@ function makeMemRub(r){
   const flist=document.createElement('div');flist.className='file-list';renderFiles(flist,r.files);
   const fwarn=document.createElement('div');fwarn.className='mem-file-warn';fwarn.textContent='⚠️ Fichier trop lourd (max 2MB)';
   const fLabel=document.createElement('label');fLabel.className='mem-upload';fLabel.innerHTML=`📁 Déposer un fichier (PDF, Word, Excel… max 2MB)<input type="file" style="display:none" multiple>`;
-  fLabel.querySelector('input').addEventListener('change',e=>{[...e.target.files].forEach(f=>{if(f.size>2097152){fwarn.classList.add('show');setTimeout(()=>fwarn.classList.remove('show'),4000);return;}const rd=new FileReader();rd.onload=ev=>{r.files.push({id:uid(),name:f.name,size:f.size,type:f.type,data:ev.target.result,date:now()});renderFiles(flist,r.files);updateSBar();markDirty();};rd.readAsDataURL(f);});e.target.value='';});
+  fLabel.querySelector('input').addEventListener('change',e=>{[...e.target.files].forEach(f=>{if(f.size>2097152){fwarn.classList.add('show');setTimeout(()=>fwarn.classList.remove('show'),4000);return;}const rd=new FileReader();rd.onload=ev=>{const m={id:uid(),name:f.name,size:f.size,type:f.type,data:ev.target.result,date:now()};r.files.push(m);renderFiles(flist,r.files);updateSBar();markDirty();attachDriveUpload(m,ev.target.result,r.title,f.name);};rd.readAsDataURL(f);});e.target.value='';});
   body.appendChild(flist);body.appendChild(fLabel);body.appendChild(fwarn);
   const tlbl=document.createElement('div');tlbl.style.cssText='font-size:9px;color:var(--t3);font-family:Syne,sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:10px 0 4px';
   tlbl.textContent=isBiblio?'Références bibliographiques':'Notes & rédaction';body.appendChild(tlbl);
@@ -3614,24 +3677,28 @@ function addNote(){
 }
 document.getElementById('noteinp')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addNote();}});
 
-/* ══ CAPTURES → DRIVE ══ */
-async function uploadImageToDrive(base64Data, rubriqueName){
-  if(!gdToken){ toast('Connecte-toi d\'abord à Drive','var(--orn)'); return null; }
+/* ══ FICHIERS/CAPTURES → DRIVE (dossier "stage" visible) ══ */
+// fileNameHint : nom d'origine du fichier si on en a un (document importé) ; sinon un nom est généré (capture d'écran)
+async function uploadFileToDrive(base64Data, rubriqueName, fileNameHint){
+  if(!gdToken){ return null; } // pas connecté → on n'affiche pas d'erreur, la copie locale suffit
   try{
-    // Convertir base64 en blob
     const byteStr = atob(base64Data.split(',')[1]);
-    const mimeType = base64Data.split(';')[0].split(':')[1];
+    const mimeType = base64Data.split(';')[0].split(':')[1] || 'application/octet-stream';
     const ab = new ArrayBuffer(byteStr.length);
     const ia = new Uint8Array(ab);
     for(let i=0;i<byteStr.length;i++) ia[i]=byteStr.charCodeAt(i);
     const blob = new Blob([ab], {type: mimeType});
 
-    // Nom du fichier avec rubrique et date
     const date = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
-    const filename = `${rubriqueName} — ${date}.png`;
+    let filename;
+    if(fileNameHint){
+      filename = `${date} — ${fileNameHint}`;
+    } else {
+      const ext = mimeType.startsWith('video')?'mp4':(mimeType.split('/')[1]||'png');
+      filename = `${rubriqueName||'capture'} — ${date}.${ext}`;
+    }
 
-    // Créer le fichier sur Drive
-    const meta = JSON.stringify({name: filename, parents: ['appDataFolder']});
+    const meta = JSON.stringify({name: filename, parents: [GD_FOLDER_ID]});
     const form = new FormData();
     form.append('metadata', new Blob([meta],{type:'application/json'}));
     form.append('file', blob);
@@ -3643,11 +3710,21 @@ async function uploadImageToDrive(base64Data, rubriqueName){
     });
     const data = await r.json();
     if(data.id){
-      toast(`📸 Capture sauvegardée sur Drive — ${filename}`);
-      return {driveId: data.id, driveName: filename};
+      return {driveId: data.id, driveName: filename, driveUrl: `https://drive.google.com/file/d/${data.id}/view`};
     }
+    if(r.status === 403){ toast('⚠️ Accès Drive refusé — reconnecte-toi (bouton ☁️ Drive)','var(--red)'); }
   } catch(e){ toast('⚠️ Erreur upload Drive','var(--orn)'); }
   return null;
+}
+// Conservé pour compatibilité avec le code existant qui appelle encore l'ancien nom
+async function uploadImageToDrive(base64Data, rubriqueName){ return uploadFileToDrive(base64Data, rubriqueName, null); }
+
+// Attache le résultat de l'upload Drive (id, nom, lien) sur l'objet média/fichier local, puis sauvegarde
+function attachDriveUpload(obj, base64Data, rubriqueName, fileNameHint){
+  if(!gdToken) return;
+  uploadFileToDrive(base64Data, rubriqueName, fileNameHint).then(info=>{
+    if(info){ obj.driveId=info.driveId; obj.driveName=info.driveName; obj.driveUrl=info.driveUrl; markDirty(); }
+  });
 }
 
 /* ══ COLLAPSE & DRAG BLOCS ══ */
@@ -3829,12 +3906,7 @@ document.getElementById('compInp')?.addEventListener('keydown',e=>{if(e.key==='E
    LIEN VERS DRIVE
 ══════════════════════════════════ */
 function openDriveFolder(){
-  if(gdFileId){
-    window.open('https://drive.google.com/drive/folders/1Rn0xWcZ-h34DTDthucbfzpvVeDT-MKgJ', '_blank');
-  } else {
-    window.open('https://drive.google.com/drive/appdata', '_blank');
-    toast('📂 Ouverture du dossier Drive…');
-  }
+  gdOpenFolder();
 }
 
 function toggleAutocorrect(){

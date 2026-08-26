@@ -1576,7 +1576,7 @@ function renderKpis(){
         const range=document.createRange();range.selectNodeContents(kn);
         const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
       });
-      kn.addEventListener('blur', ()=>{ kn.contentEditable='false'; el.classList.remove('kpi-editing'); STATE.kpis=getKpisData(); markDirty(); });
+      kn.addEventListener('blur', ()=>{ kn.contentEditable='false'; el.classList.remove('kpi-editing'); kn.textContent = kn.textContent.trim(); STATE.kpis=getKpisData(); markDirty(); });
       kn.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();kn.blur();kl.focus();} if(e.key==='Escape'){e.preventDefault();kn.blur();} });
 
       kl.style.cursor='text'; kl.title='Cliquer pour modifier';
@@ -1587,7 +1587,7 @@ function renderKpis(){
         const range=document.createRange();range.selectNodeContents(kl);
         const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
       });
-      kl.addEventListener('blur', ()=>{ kl.contentEditable='false'; el.classList.remove('kpi-editing'); STATE.kpis=getKpisData(); markDirty(); });
+      kl.addEventListener('blur', ()=>{ kl.contentEditable='false'; el.classList.remove('kpi-editing'); kl.textContent = kl.textContent.trim(); STATE.kpis=getKpisData(); markDirty(); });
       kl.addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();kl.blur();} if(e.key==='Escape'){e.preventDefault();kl.blur();} });
     }
   });

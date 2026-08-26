@@ -1571,6 +1571,7 @@ function renderKpis(){
       kn.style.cursor='text'; kn.title='Cliquer pour modifier';
       kn.addEventListener('click', e=>{
         e.stopPropagation();
+        if(kn.contentEditable === 'true') return; // déjà en édition : laisser le clic placer le curseur normalement
         el.classList.add('kpi-editing'); kn.contentEditable='true'; kn.focus();
         const range=document.createRange();range.selectNodeContents(kn);
         const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
@@ -1581,6 +1582,7 @@ function renderKpis(){
       kl.style.cursor='text'; kl.title='Cliquer pour modifier';
       kl.addEventListener('click', e=>{
         e.stopPropagation();
+        if(kl.contentEditable === 'true') return; // déjà en édition : laisser le clic placer le curseur normalement
         el.classList.add('kpi-editing'); kl.contentEditable='true'; kl.focus();
         const range=document.createRange();range.selectNodeContents(kl);
         const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);

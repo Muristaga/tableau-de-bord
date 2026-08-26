@@ -206,6 +206,12 @@ async function gdSave(){
 
 async function gdLoad(){
   if(!gdToken){ toast('Connecte-toi d\'abord à Drive','var(--orn)'); return; }
+  // Si l'utilisateur est en train de taper quelque part, on patiente un peu (jusqu'à 5s) plutôt que d'écraser sa saisie en cours
+  for(let i=0;i<10;i++){
+    const active = document.activeElement;
+    if(!active || (!active.isContentEditable && active.tagName!=='INPUT' && active.tagName!=='TEXTAREA')) break;
+    await new Promise(res=>setTimeout(res,500));
+  }
   await gdFindFile();
   if(!gdFileId){ toast('Aucun fichier sur Drive','var(--orn)'); return; }
   try {

@@ -127,7 +127,7 @@ function gdConnect(){
           localStorage.setItem('gd_token', gdToken);
           localStorage.setItem('gd_token_expiry', gdTokenExpiry.toString());
           gdUpdateBtn(true);
-          gdFindFile().then(() => gdLoad()).finally(()=>{ gdHydrating=false; gdSave(); });
+          gdFindFile().finally(()=>{ gdHydrating=false; gdSave(); });
           toast('✓ Connecté à Google Drive — sauvegarde automatique active');
           setInterval(gdRenewToken, 50*60*1000);
         }
@@ -1688,6 +1688,10 @@ function importData(e){
       STATE.chPrompts=d.chPrompts||{}; STATE.chFiles=d.chFiles||{};
       STATE.globals=d.globals||[]; STATE.phases=d.phases||{};
       STATE.autoeval=d.autoeval||{livrer:0,apprendre:0,convaincre:0};
+      STATE.notes=d.notes||[]; STATE.competences=d.competences||[];
+      STATE.publicCible=d.publicCible||[]; STATE.kpis=d.kpis||STATE.kpis;
+      STATE.questionnaire=d.questionnaire||{};
+      STATE.customBlocs=d.customBlocs||[]; STATE.customQuestions=d.customQuestions||[];
       compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
       if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
       renderAll(); saveAll(); toast('✓ Données importées');

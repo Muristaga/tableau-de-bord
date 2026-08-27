@@ -227,6 +227,11 @@ async function gdLoad(){
     STATE.autoeval=d.autoeval||{livrer:0,apprendre:0,convaincre:0};
     STATE.notes=d.notes||[]; STATE.competences=d.competences||[];
     STATE.publicCible=d.publicCible||[]; STATE.kpis=d.kpis||null;
+    STATE.questionnaire=d.questionnaire||{};
+    STATE.customQuestions=d.customQuestions||[];
+    STATE.customBlocs=d.customBlocs||[];
+    STATE.questionOverrides=d.questionOverrides||{};
+    STATE.deletedQuestions=d.deletedQuestions||[];
     compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
     if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
     renderAll(); renderKpis(); toast('☁️ Données chargées depuis Drive');
@@ -1391,6 +1396,7 @@ let STATE={
   livrables:[], outils:[], diffs:[], nns:[], memoire:[],
   chNotes:{}, chMedia:{}, chPrompts:{}, chFiles:{},
   phases:{}, globals:[], notes:[], competences:[], questionnaire:{}, customBlocs:[], customQuestions:[],
+  questionOverrides:{}, deletedQuestions:[],
   autoeval:{livrer:0,apprendre:0,convaincre:0},
   savedAt:null
 };
@@ -1638,6 +1644,8 @@ function loadAll(){
       STATE.questionnaire=d.questionnaire||{};
       STATE.customBlocs=d.customBlocs||[];
       STATE.customQuestions=d.customQuestions||[];
+      STATE.questionOverrides=d.questionOverrides||{};
+      STATE.deletedQuestions=d.deletedQuestions||[];
       compat(STATE.livrables); compat(STATE.outils); compat(STATE.diffs); compat(STATE.nns);
       if(d.savedAt){const dt=new Date(d.savedAt);document.getElementById('fdate').textContent='Sauvegardé le '+dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})+' à '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
       if(d.phases){document.querySelectorAll('.phase').forEach(p=>{const st=d.phases[p.dataset.ph];p.classList.remove('done','active');if(st==='done')p.classList.add('done');else if(st==='active')p.classList.add('active');});}
@@ -3376,6 +3384,7 @@ function renderQuestionnaire(){
   list.innerHTML = '';
 
   // Questions prédéfinies
+  if(!STATE.deletedQuestions) STATE.deletedQuestions = [];
   QUESTIONS.forEach(q=>{
     if(q.section){
       const sec = document.createElement('div');
@@ -3384,7 +3393,8 @@ function renderQuestionnaire(){
       list.appendChild(sec);
     }
     if(!q.id) return;
-    list.appendChild(makeQItem(q, false));
+    if(STATE.deletedQuestions.includes(q.id)) return; // question supprimée par Karima
+    list.appendChild(makeQItem(q, true));
   });
 
   // Questions personnalisées ajoutées par Karima
@@ -3393,32 +3403,36 @@ function renderQuestionnaire(){
     sec.className = 'q-section-title';
     sec.textContent = '✏️ Mes questions personnalisées';
     list.appendChild(sec);
-    STATE.customQuestions.forEach(q=>list.appendChild(makeQItem(q, true)));
+    STATE.customQuestions.forEach(q=>list.appendChild(makeQItem(q, false)));
   }
 }
 
-function makeQItem(q, deletable){
+function makeQItem(q, isBuiltin){
   const item = document.createElement('div');
   item.className = 'q-item';
   item.style.position = 'relative';
 
-  // Bouton supprimer (sur toutes les questions si deletable, sinon jamais)
-  if(deletable){
-    const delBtn = document.createElement('button');
-    delBtn.className = 'delbtn';
-    delBtn.style.cssText = 'position:absolute;top:8px;right:8px;';
-    delBtn.textContent = '×';
-    delBtn.onclick = ()=>{
-      softDelete(STATE.customQuestions, q, renderQuestionnaire, `Question "${q.label.substring(0,30)}…" supprimée`);
-    };
-    item.appendChild(delBtn);
-  }
+  // Bouton supprimer — sur toutes les questions désormais, prédéfinies ou personnalisées
+  const delBtn = document.createElement('button');
+  delBtn.className = 'delbtn';
+  delBtn.style.cssText = 'position:absolute;top:8px;right:8px;';
+  delBtn.textContent = '×';
+  delBtn.onclick = ()=>{
+    if(isBuiltin) deleteBuiltinQuestion(q);
+    else softDelete(STATE.customQuestions, q, renderQuestionnaire, `Question "${q.label.substring(0,30)}…" supprimée`);
+  };
+  item.appendChild(delBtn);
 
   const label = document.createElement('div');
   label.className = 'q-label';
-  label.style.paddingRight = deletable ? '24px' : '0';
-  label.textContent = q.label;
-  if(deletable) makeEditable(label, ()=>q.label, v=>{ q.label=v; markDirty(); });
+  label.style.paddingRight = '24px';
+  const getLabel = ()=> isBuiltin ? ((STATE.questionOverrides && STATE.questionOverrides[q.id]) || q.label) : q.label;
+  label.textContent = getLabel();
+  makeEditable(label, getLabel, v=>{
+    if(isBuiltin){ if(!STATE.questionOverrides) STATE.questionOverrides={}; STATE.questionOverrides[q.id]=v; }
+    else { q.label=v; }
+    markDirty();
+  });
   item.appendChild(label);
 
   if(q.sublabel){
@@ -3479,6 +3493,32 @@ function makeQItem(q, deletable){
   item.appendChild(docZone);
 
   return item;
+}
+
+function deleteBuiltinQuestion(q){
+  const confirmEl = document.createElement('div');
+  confirmEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center';
+  confirmEl.innerHTML = `<div style="background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:24px 28px;text-align:center;max-width:320px">
+    <div style="font-size:13px;color:var(--t1);margin-bottom:16px">⚠️ Supprimer <strong>cette question</strong> ?<br><span style="font-size:11px;color:var(--t3)">Tu pourras annuler pendant 5 secondes.</span></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button id="confirm-no" style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px">Annuler</button>
+      <button id="confirm-yes" style="background:var(--red);border:none;color:white;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px;font-weight:700">Supprimer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(confirmEl);
+  confirmEl.querySelector('#confirm-no').onclick = () => document.body.removeChild(confirmEl);
+  confirmEl.querySelector('#confirm-yes').onclick = () => {
+    document.body.removeChild(confirmEl);
+    if(!STATE.deletedQuestions) STATE.deletedQuestions = [];
+    STATE.deletedQuestions.push(q.id);
+    renderQuestionnaire();
+    markDirty();
+    toastUndo('Question supprimée', () => {
+      const i = STATE.deletedQuestions.indexOf(q.id);
+      if(i>=0) STATE.deletedQuestions.splice(i,1);
+      renderQuestionnaire();
+    });
+  };
 }
 
 function addCustomQuestion(){
